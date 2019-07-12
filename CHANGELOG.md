@@ -7,6 +7,8 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 ## Unreleased
 
+## v1.0.0 - 2019-07-12
+
 ### Added
 
 - Save the wallet in AES-256 encrypted file
