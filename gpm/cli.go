@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package gpm
 
 import(
   "bufio"
+  "flag"
   "fmt"
   "os"
   "strconv"
@@ -25,6 +26,20 @@ import(
   "github.com/olekukonko/tablewriter"
   "github.com/pquerna/otp/totp"
   "golang.org/x/crypto/ssh/terminal"
+)
+
+// Options
+var(
+  ADD     = flag.Bool("add", false, "add a new entry in the wallet")
+  UPDATE  = flag.Bool("update", false, "update an entry")
+  DELETE  = flag.Bool("delete", false, "delete an entry")
+  LIST    = flag.Bool("list", false, "list the entries in a wallet")
+  COPY    = flag.Bool("copy", false, "enter an copy mode for an entry")
+  CONFIG  = flag.String("config", "", "specify the config file")
+  GROUP   = flag.String("group", "", "search the entries in this group ")
+  PATTERN = flag.String("pattern", "", "search the entries with this pattern")
+  WALLET  = flag.String("wallet", "", "specify the wallet")
+  HELP    = flag.Bool("help", false, "print this help message")
 )
 
 // Cli contain config and wallet to use
@@ -247,14 +262,15 @@ func (c *Cli) copyEntry() {
   }
 }
 
-// Init the cli interface
-func (c *Cli) Init() {
-  c.Config.Load(*CONFIG)
-}
-
 // Run the cli interface
 func (c *Cli) Run() {
-  if *LIST {
+  c.Config.Load(*CONFIG)
+
+  flag.Parse()
+  if *HELP {
+    flag.PrintDefaults()
+    os.Exit(1)
+  } else if *LIST {
     c.listEntry()
   } else if *COPY {
     c.copyEntry()
