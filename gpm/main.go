@@ -15,6 +15,7 @@
 package gpm
 
 import(
+  "fmt"
   "flag"
   "os"
 )
@@ -25,11 +26,17 @@ var(
   UPDATE  = flag.Bool("update", false, "update an entry")
   DELETE  = flag.Bool("delete", false, "delete an entry")
   LIST    = flag.Bool("list", false, "list the entries in a wallet")
+  LENGTH  = flag.Int("length", 16, "specify the password length")
   COPY    = flag.Bool("copy", false, "enter an copy mode for an entry")
   CONFIG  = flag.String("config", "", "specify the config file")
   GROUP   = flag.String("group", "", "search the entries in this group ")
-  PATTERN = flag.String("pattern", "", "search the entries with this pattern")
   WALLET  = flag.String("wallet", "", "specify the wallet")
+  PATTERN = flag.String("pattern", "", "search the entries with this pattern")
+  RANDOM  = flag.Bool("random", false, "generate a random password for a new entry or an update")
+  PASSWD  = flag.Bool("password", false, "generate and print a random password")
+  DIGIT   = flag.Bool("digit", false, "use digit to generate a random password")
+  LETTER  = flag.Bool("letter", false, "use letter to generate a random password")
+  SPECIAL = flag.Bool("special", false, "use special chars to generate a random password")
   HELP    = flag.Bool("help", false, "print this help message")
 )
 
@@ -42,6 +49,8 @@ func Run() {
   if *HELP {
     flag.PrintDefaults()
     os.Exit(1)
+  } else if *PASSWD {
+    fmt.Println(cli.generatePassword(*LENGTH, *LETTER, *DIGIT, *SPECIAL))
   } else if *LIST {
     cli.listEntry()
   } else if *COPY {

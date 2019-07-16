@@ -25,8 +25,12 @@ import (
 
 // Config struct contain the config
 type Config struct {
-  WalletDir     string            `json:"wallet_dir"`
-  WalletDefault string            `json:"wallet_default"`
+  WalletDir       string `json:"wallet_dir"`
+  WalletDefault   string `json:"wallet_default"`
+  PasswordLength  int    `json:"password_length"`
+  PasswordLetter  bool   `json:"password_letter"`
+  PasswordDigit   bool   `json:"password_digit"`
+  PasswordSpecial bool   `json:"password_special"`
 }
 
 // Init the configuration
@@ -43,7 +47,11 @@ func (c *Config) Init() error {
   } else {
     c.WalletDir = fmt.Sprintf("%s/.config/mpw", user.HomeDir)
   }
-  c.WalletDefault = "default"
+  c.WalletDefault   = "default"
+  c.PasswordLength  = 16
+  c.PasswordLetter  = true
+  c.PasswordDigit   = true
+  c.PasswordSpecial = false
 
   return nil
 }

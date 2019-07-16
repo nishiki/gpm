@@ -10,6 +10,7 @@ gpm is passwords manager write in go and use AES-256 to encrypt the wallets
 - generate OTP code
 - copy your login, password or otp in clipboard
 - manage multiple wallets
+- generate random password
 
 ## Install
 

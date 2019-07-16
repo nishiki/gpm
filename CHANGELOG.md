@@ -7,6 +7,11 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 ## Unreleased
 
+### Added
+
+- Use go module to get this software
+- Generate random password
+
 ## v1.0.0 - 2019-07-12
 
 ### Added

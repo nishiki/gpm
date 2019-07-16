@@ -17,6 +17,7 @@ package gpm
 import(
   "bufio"
   "fmt"
+  "math/rand"
   "os"
   "strconv"
   "syscall"
@@ -63,6 +64,29 @@ func (c *Cli) printEntries(entries []Entry) {
     table.Render()
     fmt.Println("")
   }
+}
+
+// generate a random password
+func (c *Cli) generatePassword(length int, letter bool, digit bool, special bool) string {
+	digits := "0123456789"
+	specials := "~=+%^*/()[]{}/!@#$?|"
+	letters := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+  chars := ""
+	password := make([]byte, length)
+
+  if letter { chars = chars + letters }
+  if digit { chars = chars + digits }
+  if special { chars = chars + specials }
+  if !letter && !digit && !special {
+	  chars = digits + letters
+  }
+
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < length; i++ {
+	    password[i] = chars[rand.Intn(len(chars))]
+	}
+
+  return string(password)
 }
 
 // error print a message and exit)
@@ -190,7 +214,12 @@ func (c *Cli) addEntry() {
   entry.Group    = c.input("Enter the group: ", "", true)
   entry.URI      = c.input("Enter the URI: ",  "", true)
   entry.User     = c.input("Enter the username: ", "", true)
-  entry.Password = c.input("Enter the password: ", "", false)
+  if *RANDOM {
+    entry.Password = c.generatePassword(c.Config.PasswordLength,
+      c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
+  } else {
+    entry.Password = c.input("Enter the new password: ", entry.Password, false)
+  }
   entry.OTP      = c.input("Enter the OTP key: ", "", false)
   entry.Comment  = c.input("Enter a comment: ", "", true)
 
@@ -210,7 +239,12 @@ func (c *Cli) updateEntry() {
   entry.Group    = c.input("Enter the new group: ", entry.Group, true)
   entry.URI      = c.input("Enter the new URI: ", entry.URI, true)
   entry.User     = c.input("Enter the new username: ", entry.User, true)
-  entry.Password = c.input("Enter the new password: ", entry.Password, false)
+  if *RANDOM {
+    entry.Password = c.generatePassword(c.Config.PasswordLength,
+      c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
+  } else {
+    entry.Password = c.input("Enter the new password: ", entry.Password, false)
+  }
   entry.OTP      = c.input("Enter the new OTP key: ", entry.OTP, false)
   entry.Comment  = c.input("Enter a new comment: ", entry.Comment, true)
 
