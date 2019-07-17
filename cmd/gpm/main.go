@@ -19,6 +19,5 @@ import(
 )
 
 func main() {
-  c := gpm.Cli{}
-  c.Run()
+  gpm.Run()
 }
