@@ -90,7 +90,7 @@ func (c *Cli) generatePassword(length int, letter bool, digit bool, special bool
 
 // error print a message and exit)
 func (c *Cli) error(msg string) {
-  fmt.Println(msg)
+  fmt.Printf("ERROR: %s\n", msg)
   os.Exit(2)
 }
 

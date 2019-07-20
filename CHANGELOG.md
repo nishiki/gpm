@@ -13,6 +13,10 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 - Generate random password
 - Print the expiration time of TOTP code
 
+## Changed
+
+- Prefix error message with ERROR 
+
 ## v1.0.0 - 2019-07-12
 
 ### Added
