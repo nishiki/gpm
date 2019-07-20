@@ -18,6 +18,8 @@ import(
   "fmt"
   "time"
   "net/url"
+
+  "github.com/pquerna/otp/totp"
 )
 
 // Entry struct have the password informations
@@ -53,4 +55,10 @@ func (e *Entry) Verify() error {
 // GenerateID create a new id for the entry
 func (e *Entry) GenerateID() {
   e.ID = fmt.Sprintf("%d", time.Now().UnixNano())
+}
+
+// OTPCode generate an OTP Code
+func (e *Entry) OTPCode() string {
+  code, _ := totp.GenerateCode(e.OTP, time.Now())
+  return code
 }

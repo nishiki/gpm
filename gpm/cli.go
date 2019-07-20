@@ -24,7 +24,6 @@ import(
   "time"
   "github.com/atotto/clipboard"
   "github.com/olekukonko/tablewriter"
-  "github.com/pquerna/otp/totp"
   "golang.org/x/crypto/ssh/terminal"
 )
 
@@ -268,8 +267,7 @@ func (c *Cli) copyEntry() {
       case "p":
         clipboard.WriteAll(entry.Password)
       case "o":
-        code, _ := totp.GenerateCode(entry.OTP, time.Now())
-        clipboard.WriteAll(code)
+        clipboard.WriteAll(entry.OTPCode())
       case "q":
         os.Exit(0)
       default:
