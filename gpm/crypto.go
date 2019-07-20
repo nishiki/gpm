@@ -16,7 +16,7 @@ package gpm
 
 import(
   "crypto/aes"
-  "crypto/sha1"
+  "crypto/sha512"
   "crypto/cipher"
   "crypto/rand"
   "encoding/base64"
@@ -29,7 +29,7 @@ import(
 
 // Encrypt data with aes256
 func Encrypt(data []byte, passphrase string, salt string) (string, error) {
-  key := pbkdf2.Key([]byte(passphrase), []byte(salt), 4096, 32, sha1.New)
+  key := pbkdf2.Key([]byte(passphrase), []byte(salt), 4096, 32, sha512.New)
 
   block, err := aes.NewCipher([]byte(key))
   if err != nil {
@@ -54,7 +54,7 @@ func Encrypt(data []byte, passphrase string, salt string) (string, error) {
 
 // Decrypt data
 func Decrypt(data string, passphrase string, salt string) ([]byte, error) {
-  key := pbkdf2.Key([]byte(passphrase), []byte(salt), 4096, 32, sha1.New)
+  key := pbkdf2.Key([]byte(passphrase), []byte(salt), 4096, 32, sha512.New)
 
   rawData, err := base64.StdEncoding.DecodeString(data)
   if err != nil {
