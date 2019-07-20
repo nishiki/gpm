@@ -267,7 +267,9 @@ func (c *Cli) copyEntry() {
       case "p":
         clipboard.WriteAll(entry.Password)
       case "o":
-        clipboard.WriteAll(entry.OTPCode())
+        code, time, _ := entry.OTPCode()
+        fmt.Printf("this OTP code is available for %d seconds\n", time)
+        clipboard.WriteAll(code)
       case "q":
         os.Exit(0)
       default:

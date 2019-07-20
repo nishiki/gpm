@@ -58,7 +58,12 @@ func (e *Entry) GenerateID() {
 }
 
 // OTPCode generate an OTP Code
-func (e *Entry) OTPCode() string {
-  code, _ := totp.GenerateCode(e.OTP, time.Now())
-  return code
+func (e *Entry) OTPCode() (string, int64, error){
+  code, err := totp.GenerateCode(e.OTP, time.Now())
+  time := 30 - (time.Now().Unix() % 30)
+  if err != nil {
+    return "", 0, err
+  }
+
+  return code, time, nil
 }

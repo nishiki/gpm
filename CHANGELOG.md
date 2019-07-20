@@ -11,6 +11,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 - Use go module to get this software
 - Generate random password
+- Print the expiration time of TOTP code
 
 ## v1.0.0 - 2019-07-12
 
