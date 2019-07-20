@@ -21,6 +21,8 @@ import(
   "crypto/rand"
   "encoding/base64"
   "io"
+  mrand "math/rand"
+  "time"
 
   "golang.org/x/crypto/pbkdf2"
 )
@@ -77,4 +79,27 @@ func Decrypt(data string, passphrase string, salt string) ([]byte, error) {
   }
 
   return plaintext, nil
+}
+
+// RandomString generate a random string
+func RandomString(length int, letter bool, digit bool, special bool) string {
+	digits := "0123456789"
+	specials := "~=+%^*/()[]{}/!@#$?|"
+	letters := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+  chars := ""
+	randomString := make([]byte, length)
+
+  if letter { chars = chars + letters }
+  if digit { chars = chars + digits }
+  if special { chars = chars + specials }
+  if !letter && !digit && !special {
+	  chars = digits + letters
+  }
+
+  mrand.Seed(time.Now().UnixNano())
+	for i := 0; i < length; i++ {
+	    randomString[i] = chars[mrand.Intn(len(chars))]
+	}
+
+  return string(randomString)
 }

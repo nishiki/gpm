@@ -50,7 +50,7 @@ func Run() {
     flag.PrintDefaults()
     os.Exit(1)
   } else if *PASSWD {
-    fmt.Println(cli.generatePassword(*LENGTH, *LETTER, *DIGIT, *SPECIAL))
+    fmt.Println(RandomString(*LENGTH, *LETTER, *DIGIT, *SPECIAL))
   } else if *LIST {
     cli.listEntry()
   } else if *COPY {
