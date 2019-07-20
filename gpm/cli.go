@@ -112,7 +112,6 @@ func (c *Cli) input(text string, defaultValue string, show bool) string {
   input := bufio.NewScanner(os.Stdin)
   input.Scan()
   if input.Text() == "" {
-    fmt.Printf("\n")
     return defaultValue
   }
   return input.Text()
