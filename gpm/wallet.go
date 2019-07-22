@@ -190,6 +190,25 @@ func (w *Wallet) UpdateEntry(entry Entry) error {
   return fmt.Errorf("unknown error during the update")
 }
 
+// Import a wallet from a json string
+func (w *Wallet) Import(data []byte) error {
+  var entries []Entry
+
+  err := json.Unmarshal([]byte(data), &entries)
+  if err != nil {
+    return err
+  }
+
+  for _, entry := range entries {
+    err = w.AddEntry(entry)
+    if err != nil {
+      return err
+    }
+  }
+
+  return nil
+}
+
 // Export a wallet to json
 func (w *Wallet) Export() (string, error) {
   data, err := json.Marshal(&w.Entries)

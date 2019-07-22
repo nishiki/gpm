@@ -38,6 +38,7 @@ var(
   LETTER  = flag.Bool("letter", false, "use letter to generate a random password")
   SPECIAL = flag.Bool("special", false, "use special chars to generate a random password")
   EXPORT  = flag.Bool("export", false, "export a wallet in json format")
+  IMPORT  = flag.String("import", "", "import entries from a json file")
   HELP    = flag.Bool("help", false, "print this help message")
 )
 
@@ -62,6 +63,8 @@ func Run() {
     cli.updateEntry()
   } else if *DELETE {
     cli.deleteEntry()
+  } else if *IMPORT != "" {
+    cli.ImportWallet()
   } else if *EXPORT {
     cli.ExportWallet()
   }

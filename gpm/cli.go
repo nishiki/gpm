@@ -17,6 +17,7 @@ package gpm
 import(
   "bufio"
   "fmt"
+  "io/ioutil"
   "os"
   "strconv"
   "syscall"
@@ -255,6 +256,34 @@ func (c *Cli) copyEntry() {
   }
 }
 
+// Import entries from json file
+func (c *Cli) ImportWallet() {
+  c.loadWallet()
+
+   _, err := os.Stat(*IMPORT)
+  if err != nil {
+    c.error(fmt.Sprintf("%s", err))
+  }
+
+  data, err := ioutil.ReadFile(*IMPORT)
+  if err != nil {
+    c.error(fmt.Sprintf("%s", err))
+  }
+
+  err = c.Wallet.Import(data)
+  if err != nil {
+    c.error(fmt.Sprintf("%s", err))
+  }
+
+  err = c.Wallet.Save()
+  if err != nil {
+    c.error(fmt.Sprintf("%s", err))
+  }
+
+  fmt.Println("the import was successful")
+}
+
+// Export a wallet in json format
 func (c *Cli) ExportWallet() {
   c.loadWallet()
 
