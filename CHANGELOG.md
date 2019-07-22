@@ -21,6 +21,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 - Fix new line with clear input
 - Replace sha1 to sha512 in pbkdf2.Key function
 - Replace default config directory
+- Fix bug in the wallet choice
 
 ## v1.0.0 - 2019-07-12
 

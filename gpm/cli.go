@@ -133,7 +133,7 @@ func (c *Cli) loadWallet() {
 
   c.Wallet = Wallet{
     Name: walletName,
-    Path: fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, c.Config.WalletDefault),
+    Path: fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, walletName),
     Passphrase: passphrase,
   }
 
