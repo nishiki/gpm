@@ -12,6 +12,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 - Use go module to get this software
 - Generate random password
 - Print the expiration time of TOTP code
+- Export a wallet in json
 
 ## Changed
 

@@ -189,3 +189,13 @@ func (w *Wallet) UpdateEntry(entry Entry) error {
 
   return fmt.Errorf("unknown error during the update")
 }
+
+// Export a wallet to json
+func (w *Wallet) Export() (string, error) {
+  data, err := json.Marshal(&w.Entries)
+  if err != nil {
+    return "", err
+  }
+
+  return string(data), nil
+}

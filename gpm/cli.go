@@ -254,3 +254,14 @@ func (c *Cli) copyEntry() {
     }
   }
 }
+
+func (c *Cli) ExportWallet() {
+  c.loadWallet()
+
+  data, err := c.Wallet.Export()
+  if err != nil {
+    c.error(fmt.Sprintf("%s", err))
+  }
+
+  fmt.Println(data)
+}
