@@ -41,11 +41,11 @@ func (c *Config) Init() error {
   }
 
   if runtime.GOOS == "darwin" {
-    c.WalletDir = fmt.Sprintf("%s/Library/Preferences/mpw", user.HomeDir)
+    c.WalletDir = fmt.Sprintf("%s/Library/Preferences/gpm", user.HomeDir)
   } else if runtime.GOOS == "windows" {
-    c.WalletDir = fmt.Sprintf("%s/AppData/Local/mpw", user.HomeDir)
+    c.WalletDir = fmt.Sprintf("%s/AppData/Local/gpm", user.HomeDir)
   } else {
-    c.WalletDir = fmt.Sprintf("%s/.config/mpw", user.HomeDir)
+    c.WalletDir = fmt.Sprintf("%s/.config/gpm", user.HomeDir)
   }
   c.WalletDefault   = "default"
   c.PasswordLength  = 16
