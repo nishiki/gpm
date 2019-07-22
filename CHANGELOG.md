@@ -14,6 +14,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 - Print the expiration time of TOTP code
 - Export a wallet in json
 - Import entries from a json file
+- Create the wallets directory
 
 ## Changed
 

@@ -58,20 +58,29 @@ func (c *Config) Init() error {
 
 // Load the configuration from a file
 func (c *Config) Load(path string) error {
-  _, err := os.Stat(path)
+  err := c.Init()
   if err != nil {
-    err = c.Init()
+    return err
+  }
+
+  if path != "" {
+    _, err = os.Stat(path)
+    if err != nil {
+
+    }
+
+    data, err := ioutil.ReadFile(path)
+    if err != nil {
+      return err
+    }
+
+    err = json.Unmarshal(data, &c)
     if err != nil {
       return err
     }
   }
 
-  data, err := ioutil.ReadFile(path)
-  if err != nil {
-    return err
-  }
-
-  err = json.Unmarshal(data, &c)
+  err = os.MkdirAll(c.WalletDir, 0700)
   if err != nil {
     return err
   }
