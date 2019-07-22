@@ -201,7 +201,13 @@ func (c *Cli) addEntry() {
   if err != nil {
     c.error(fmt.Sprintf("%s", err))
   }
-  c.Wallet.Save()
+
+  err = c.Wallet.Save()
+  if err != nil {
+    c.error(fmt.Sprintf("%s", err))
+  }
+
+  fmt.Println("the entry has been added")
 }
 
 // Update an entry in wallet
