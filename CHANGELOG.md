@@ -7,6 +7,8 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 ## Unreleased
 
+## v1.1.0 - 2019-07-23
+
 ### Added
 
 - Use go module to get this software

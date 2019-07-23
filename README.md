@@ -1,6 +1,6 @@
 # gpm: Go Passwords Manager
 
-[![Version](https://img.shields.io/badge/latest_version-1.0.0-green.svg)](https://git.yaegashi.fr/nishiki/gpm/releases)
+[![Version](https://img.shields.io/badge/latest_version-1.1.0-green.svg)](https://git.yaegashi.fr/nishiki/gpm/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://git.yaegashi.fr/nishiki/gpm/src/branch/master/LICENSE)
 
 gpm is passwords manager write in go and use AES-256 to encrypt the wallets
