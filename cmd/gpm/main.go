@@ -15,7 +15,7 @@
 package main
 
 import(
-  "git.yaegashi.fr/nishiki/gpm"
+  "git.yaegashi.fr/nishiki/gpm/gpm"
 )
 
 func main() {
