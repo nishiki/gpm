@@ -14,23 +14,49 @@ gpm is passwords manager write in go and use AES-256 to encrypt the wallets
 
 ## Install
 
-### Build
-
-Download the sources and build
-
-```text
-git clone https://git.yaegashi.fr/nishiki/gpm.git
-cd gpm
-go build -o bin/gpm src/*.go
-```
-
-Copy the binary in PATH:
+- Install [golang](https://golang.org/doc/install)
+- Add `~/go/bin` in your `PATH`
+- Download and build
 
 ```text
-sudo cp bin/gpm /usr/local/bin/gpm
+go get git.yaegashi.fr/nishiki/gpm/cmd/gpm
 ```
 
 ## How to use
+
+### First steps
+
+- Add new entry `gpm -add`
+
+```text
+Enter the passphrase to unlock the wallet: 
+Enter the name: Test
+Enter the group: MyGroup
+Enter the URI: http://localhost
+Enter the username: lastname
+Enter the new password: 
+Enter the OTP key: 
+Enter a comment: My first entry
+the entry has been added
+```
+
+- Search and copy `gpm -copy`
+
+```text
+Enter the passphrase to unlock the wallet: 
+
+MyGroup
+
+    | NAME |       URI        |   USER   | OTP |    COMMENT      
+----+------+------------------+----------+-----+-----------------
+  0 | Test | http://localhost | lastname | X   | My first entry  
+
+select one action: p
+select one action: l
+select one action: q
+```
+
+### All options
 
 ```text
 gpm -help
@@ -42,16 +68,34 @@ gpm -help
         enter an copy mode for an entry
   -delete
         delete an entry
+  -digit
+        use digit to generate a random password
+  -export
+        export a wallet in json format
   -group string
-        search the entries in this group
+        search the entries in this group 
   -help
         print this help message
+  -import string
+        import entries from a json file
+  -length int
+        specify the password length (default 16)
+  -letter
+        use letter to generate a random password
   -list
         list the entries in a wallet
+  -password
+        generate and print a random password
   -pattern string
         search the entries with this pattern
+  -random
+        generate a random password for a new entry or an update
+  -special
+        use special chars to generate a random password
   -update
         update an entry
+  -wallet string
+        specify the wallet
 ```
 
 ## License
