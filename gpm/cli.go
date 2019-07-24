@@ -298,5 +298,10 @@ func (c *Cli) ExportWallet() {
     c.error(fmt.Sprintf("%s", err))
   }
 
-  fmt.Println(data)
+  err = ioutil.WriteFile(*EXPORT, data, 0600)
+  if err != nil {
+    c.error(fmt.Sprintf("%s", err))
+  }
+
+  fmt.Println("the export was successful")
 }

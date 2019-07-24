@@ -11,6 +11,10 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 - Test build with travis
 
+### Changed
+
+- Export in a file
+
 ## v1.1.0 - 2019-07-23
 
 ### Added

@@ -210,11 +210,11 @@ func (w *Wallet) Import(data []byte) error {
 }
 
 // Export a wallet to json
-func (w *Wallet) Export() (string, error) {
+func (w *Wallet) Export() ([]byte, error) {
   data, err := json.Marshal(&w.Entries)
   if err != nil {
-    return "", err
+    return []byte{}, err
   }
 
-  return string(data), nil
+  return data, nil
 }
