@@ -1,0 +1,4 @@
+---
+language: go
+script:
+  - go get git.yaegashi.fr/nishiki/gpm/cmd/gpm
