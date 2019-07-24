@@ -18,7 +18,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 - Import entries from a json file
 - Create the wallets directory
 
-## Changed
+### Changed
 
 - Prefix error message with ERROR 
 - Fix new line with clear input
