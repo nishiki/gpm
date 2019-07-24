@@ -24,14 +24,16 @@ import(
 
 // Entry struct have the password informations
 type Entry struct {
-  Name     string `yaml:"name"`
-  ID       string `yaml:"id"`
-  URI      string `yaml:"uri"`
-  User     string `yaml:"login"`
-  Password string `yaml:"password"`
-  OTP      string `yaml:"otp"`
-  Group    string `yaml:"group"`
-  Comment  string `yaml:"comment"`
+  Name       string
+  ID         string
+  URI        string
+  User       string
+  Password   string
+  OTP        string
+  Group      string
+  Comment    string
+  Create     int64
+  LastUpdate int64
 }
 
 // Verify if the item have'nt error

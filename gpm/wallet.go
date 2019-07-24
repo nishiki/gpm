@@ -21,6 +21,7 @@ import (
   "math/rand"
   "os"
   "regexp"
+  "time"
   "sort"
   "strings"
 )
@@ -151,6 +152,8 @@ func (w *Wallet) AddEntry(entry Entry) error {
    return fmt.Errorf("the id already exists in wallet, can't add the entry")
  }
 
+  entry.Create = time.Now().Unix()
+  entry.LastUpdate = entry.Create
   w.Entries = append(w.Entries, entry)
 
   return nil
@@ -180,6 +183,7 @@ func (w *Wallet) UpdateEntry(entry Entry) error {
     return err
   }
 
+  entry.LastUpdate = time.Now().Unix()
   for index, i := range w.Entries {
     if entry.ID == i.ID {
       w.Entries[index] = entry

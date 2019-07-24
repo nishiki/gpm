@@ -10,6 +10,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 ### Added
 
 - Test build with travis
+- Add entry's fields Create and LastUpdate
 
 ### Changed
 
