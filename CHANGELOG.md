@@ -15,6 +15,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 ### Changed
 
 - Export in a file
+- Use RandomString function for wallet's salt
 
 ## v1.1.0 - 2019-07-23
 

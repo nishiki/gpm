@@ -18,7 +18,6 @@ import (
   "encoding/json"
   "fmt"
   "io/ioutil"
-  "math/rand"
   "os"
   "regexp"
   "time"
@@ -78,11 +77,7 @@ func (w *Wallet) Load() error {
 // Save the wallet on the disk
 func (w *Wallet) Save() error {
   if w.Salt == "" {
-    salt := make([]byte, 8)
-    for i := 0; i < 8; i++ {
-      salt[i] = byte(65 + rand.Intn(25))
-    }
-    w.Salt = string(salt)
+    w.Salt = RandomString(12, true, true, false)
   }
 
   data, err := json.Marshal(&w.Entries)
