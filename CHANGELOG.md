@@ -16,6 +16,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 - Export in a file
 - Use RandomString function for wallet's salt
+- Search is case insensite
 
 ## v1.1.0 - 2019-07-23
 

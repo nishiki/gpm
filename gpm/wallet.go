@@ -107,13 +107,14 @@ func (w *Wallet) Save() error {
 // SearchEntry return an array with the array expected with the pattern
 func (w *Wallet) SearchEntry(pattern string, group string) []Entry {
   var entries []Entry
-  r := regexp.MustCompile(pattern)
+  r := regexp.MustCompile(strings.ToLower(pattern))
 
   for _, entry := range w.Entries {
     if group != "" && strings.ToLower(entry.Group) != strings.ToLower(group) {
       continue
     }
-    if r.Match([]byte(entry.Name)) || r.Match([]byte(entry.Comment)) || r.Match([]byte(entry.URI)) {
+    if r.Match([]byte(strings.ToLower(entry.Name))) ||
+      r.Match([]byte(strings.ToLower(entry.Comment))) || r.Match([]byte(strings.ToLower(entry.URI))) {
       entries = append(entries, entry)
     }
   }
