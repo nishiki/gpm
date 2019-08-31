@@ -14,10 +14,10 @@
 
 package main
 
-import(
-  "git.yaegashi.fr/nishiki/gpm/gpm"
+import (
+	"git.yaegashi.fr/nishiki/gpm/gpm"
 )
 
 func main() {
-  gpm.Run()
+	gpm.Run()
 }

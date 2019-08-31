@@ -14,294 +14,298 @@
 
 package gpm
 
-import(
-  "bufio"
-  "fmt"
-  "io/ioutil"
-  "os"
-  "strconv"
-  "syscall"
-  "github.com/atotto/clipboard"
-  "github.com/olekukonko/tablewriter"
-  "golang.org/x/crypto/ssh/terminal"
+import (
+	"bufio"
+	"fmt"
+	"github.com/atotto/clipboard"
+	"github.com/olekukonko/tablewriter"
+	"golang.org/x/crypto/ssh/terminal"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"syscall"
 )
 
 // Cli contain config and wallet to use
 type Cli struct {
-  Config Config
-  Wallet Wallet
+	Config Config
+	Wallet Wallet
 }
 
 // printEntries show entries with tables
 func (c *Cli) printEntries(entries []Entry) {
-  var otp string
-  var tables map[string]*tablewriter.Table
+	var otp string
+	var tables map[string]*tablewriter.Table
 
-  tables = make(map[string]*tablewriter.Table)
+	tables = make(map[string]*tablewriter.Table)
 
-  for i, entry := range entries {
-    if entry.OTP == "" { otp = "" } else { otp = "X" }
-    if _, present := tables[entry.Group]; present == false  {
-      tables[entry.Group] = tablewriter.NewWriter(os.Stdout)
-      tables[entry.Group].SetHeader([]string{"", "Name", "URI", "User", "OTP", "Comment"})
-      tables[entry.Group].SetBorder(false)
-      tables[entry.Group].SetColumnColor(
-        tablewriter.Colors{tablewriter.Normal, tablewriter.FgYellowColor},
-        tablewriter.Colors{tablewriter.Normal, tablewriter.FgWhiteColor},
-        tablewriter.Colors{tablewriter.Normal, tablewriter.FgCyanColor},
-        tablewriter.Colors{tablewriter.Normal, tablewriter.FgGreenColor},
-        tablewriter.Colors{tablewriter.Normal, tablewriter.FgWhiteColor},
-        tablewriter.Colors{tablewriter.Normal, tablewriter.FgMagentaColor})
-    }
+	for i, entry := range entries {
+		if entry.OTP == "" {
+			otp = ""
+		} else {
+			otp = "X"
+		}
+		if _, present := tables[entry.Group]; present == false {
+			tables[entry.Group] = tablewriter.NewWriter(os.Stdout)
+			tables[entry.Group].SetHeader([]string{"", "Name", "URI", "User", "OTP", "Comment"})
+			tables[entry.Group].SetBorder(false)
+			tables[entry.Group].SetColumnColor(
+				tablewriter.Colors{tablewriter.Normal, tablewriter.FgYellowColor},
+				tablewriter.Colors{tablewriter.Normal, tablewriter.FgWhiteColor},
+				tablewriter.Colors{tablewriter.Normal, tablewriter.FgCyanColor},
+				tablewriter.Colors{tablewriter.Normal, tablewriter.FgGreenColor},
+				tablewriter.Colors{tablewriter.Normal, tablewriter.FgWhiteColor},
+				tablewriter.Colors{tablewriter.Normal, tablewriter.FgMagentaColor})
+		}
 
-    tables[entry.Group].Append([]string{ strconv.Itoa(i), entry.Name, entry.URI, entry.User, otp, entry.Comment })
-  }
+		tables[entry.Group].Append([]string{strconv.Itoa(i), entry.Name, entry.URI, entry.User, otp, entry.Comment})
+	}
 
-  for group, table := range tables {
-    fmt.Printf("\n%s\n\n", group)
-    table.Render()
-    fmt.Println("")
-  }
+	for group, table := range tables {
+		fmt.Printf("\n%s\n\n", group)
+		table.Render()
+		fmt.Println("")
+	}
 }
 
 // error print a message and exit)
 func (c *Cli) error(msg string) {
-  fmt.Printf("ERROR: %s\n", msg)
-  os.Exit(2)
+	fmt.Printf("ERROR: %s\n", msg)
+	os.Exit(2)
 }
 
 // input from the console
 func (c *Cli) input(text string, defaultValue string, show bool) string {
-  fmt.Print(text)
+	fmt.Print(text)
 
-  if show == false {
-    data, _ := terminal.ReadPassword(int(syscall.Stdin))
-    text := string(data)
-    fmt.Printf("\n")
+	if show == false {
+		data, _ := terminal.ReadPassword(int(syscall.Stdin))
+		text := string(data)
+		fmt.Printf("\n")
 
-    if text == "" {
-      return defaultValue
-    }
-    return text
-  }
+		if text == "" {
+			return defaultValue
+		}
+		return text
+	}
 
-  input := bufio.NewScanner(os.Stdin)
-  input.Scan()
-  if input.Text() == "" {
-    return defaultValue
-  }
-  return input.Text()
+	input := bufio.NewScanner(os.Stdin)
+	input.Scan()
+	if input.Text() == "" {
+		return defaultValue
+	}
+	return input.Text()
 }
 
 // selectEntry with a form
 func (c *Cli) selectEntry() Entry {
-  var index int
+	var index int
 
-  entries := c.Wallet.SearchEntry(*PATTERN, *GROUP)
-  if len(entries) == 0 {
-    fmt.Println("no entry found")
-    os.Exit(1)
-  }
+	entries := c.Wallet.SearchEntry(*PATTERN, *GROUP)
+	if len(entries) == 0 {
+		fmt.Println("no entry found")
+		os.Exit(1)
+	}
 
-  c.printEntries(entries)
-  if len(entries) == 1 {
-    return entries[0]
-  }
+	c.printEntries(entries)
+	if len(entries) == 1 {
+		return entries[0]
+	}
 
-  for true {
-    index, err := strconv.Atoi(c.input("Select the entry: ", "", true))
-    if err == nil && index >= 0 && index + 1 <= len(entries) {
-      break
-    }
-    fmt.Println("your choice is not an integer or is out of range")
-  }
+	for true {
+		index, err := strconv.Atoi(c.input("Select the entry: ", "", true))
+		if err == nil && index >= 0 && index+1 <= len(entries) {
+			break
+		}
+		fmt.Println("your choice is not an integer or is out of range")
+	}
 
-  return entries[index]
+	return entries[index]
 }
 
 // loadWallet get and unlock the wallet
 func (c *Cli) loadWallet() {
-  var walletName string
+	var walletName string
 
-  passphrase := c.input("Enter the passphrase to unlock the wallet: ", "", false)
+	passphrase := c.input("Enter the passphrase to unlock the wallet: ", "", false)
 
-  if *WALLET == "" {
-    walletName = c.Config.WalletDefault
-  } else {
-    walletName = *WALLET
-  }
+	if *WALLET == "" {
+		walletName = c.Config.WalletDefault
+	} else {
+		walletName = *WALLET
+	}
 
-  c.Wallet = Wallet{
-    Name: walletName,
-    Path: fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, walletName),
-    Passphrase: passphrase,
-  }
+	c.Wallet = Wallet{
+		Name:       walletName,
+		Path:       fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, walletName),
+		Passphrase: passphrase,
+	}
 
-  err := c.Wallet.Load()
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	err := c.Wallet.Load()
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 }
 
 // List the entry of a wallet
 func (c *Cli) listEntry() {
-  c.loadWallet()
-  entries := c.Wallet.SearchEntry(*PATTERN, *GROUP)
-  if len(entries) == 0 {
-    fmt.Println("no entry found")
-    os.Exit(1)
-  } else {
-    c.printEntries(entries)
-  }
+	c.loadWallet()
+	entries := c.Wallet.SearchEntry(*PATTERN, *GROUP)
+	if len(entries) == 0 {
+		fmt.Println("no entry found")
+		os.Exit(1)
+	} else {
+		c.printEntries(entries)
+	}
 }
 
 // Delete an entry of a wallet
 func (c *Cli) deleteEntry() {
-  var entry Entry
+	var entry Entry
 
-  c.loadWallet()
-  entry = c.selectEntry()
-  confirm := c.input("are you sure you want to remove this entry [y/N] ?", "N", true)
+	c.loadWallet()
+	entry = c.selectEntry()
+	confirm := c.input("are you sure you want to remove this entry [y/N] ?", "N", true)
 
-  if confirm == "y" {
-    err := c.Wallet.DeleteEntry(entry.ID)
-    if err != nil {
-      c.error(fmt.Sprintf("%s", err))
-    }
+	if confirm == "y" {
+		err := c.Wallet.DeleteEntry(entry.ID)
+		if err != nil {
+			c.error(fmt.Sprintf("%s", err))
+		}
 
-    err = c.Wallet.Save()
-    if err != nil {
-      c.error(fmt.Sprintf("%s", err))
-    }
+		err = c.Wallet.Save()
+		if err != nil {
+			c.error(fmt.Sprintf("%s", err))
+		}
 
-    fmt.Println("the entry has been deleted")
-  }
+		fmt.Println("the entry has been deleted")
+	}
 }
 
 // Add a new entry in wallet
 func (c *Cli) addEntry() {
-  c.loadWallet()
+	c.loadWallet()
 
-  entry := Entry{}
-  entry.GenerateID()
-  entry.Name     = c.input("Enter the name: ", "", true)
-  entry.Group    = c.input("Enter the group: ", "", true)
-  entry.URI      = c.input("Enter the URI: ",  "", true)
-  entry.User     = c.input("Enter the username: ", "", true)
-  if *RANDOM {
-    entry.Password = RandomString(c.Config.PasswordLength,
-      c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
-  } else {
-    entry.Password = c.input("Enter the new password: ", entry.Password, false)
-  }
-  entry.OTP      = c.input("Enter the OTP key: ", "", false)
-  entry.Comment  = c.input("Enter a comment: ", "", true)
+	entry := Entry{}
+	entry.GenerateID()
+	entry.Name = c.input("Enter the name: ", "", true)
+	entry.Group = c.input("Enter the group: ", "", true)
+	entry.URI = c.input("Enter the URI: ", "", true)
+	entry.User = c.input("Enter the username: ", "", true)
+	if *RANDOM {
+		entry.Password = RandomString(c.Config.PasswordLength,
+			c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
+	} else {
+		entry.Password = c.input("Enter the new password: ", entry.Password, false)
+	}
+	entry.OTP = c.input("Enter the OTP key: ", "", false)
+	entry.Comment = c.input("Enter a comment: ", "", true)
 
-  err := c.Wallet.AddEntry(entry)
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	err := c.Wallet.AddEntry(entry)
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  err = c.Wallet.Save()
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	err = c.Wallet.Save()
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  fmt.Println("the entry has been added")
+	fmt.Println("the entry has been added")
 }
 
 // Update an entry in wallet
 func (c *Cli) updateEntry() {
-  c.loadWallet()
+	c.loadWallet()
 
-  entry := c.selectEntry()
-  entry.Name     = c.input("Enter the new name: ", entry.Name, true)
-  entry.Group    = c.input("Enter the new group: ", entry.Group, true)
-  entry.URI      = c.input("Enter the new URI: ", entry.URI, true)
-  entry.User     = c.input("Enter the new username: ", entry.User, true)
-  if *RANDOM {
-    entry.Password = RandomString(c.Config.PasswordLength,
-      c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
-  } else {
-    entry.Password = c.input("Enter the new password: ", entry.Password, false)
-  }
-  entry.OTP      = c.input("Enter the new OTP key: ", entry.OTP, false)
-  entry.Comment  = c.input("Enter a new comment: ", entry.Comment, true)
+	entry := c.selectEntry()
+	entry.Name = c.input("Enter the new name: ", entry.Name, true)
+	entry.Group = c.input("Enter the new group: ", entry.Group, true)
+	entry.URI = c.input("Enter the new URI: ", entry.URI, true)
+	entry.User = c.input("Enter the new username: ", entry.User, true)
+	if *RANDOM {
+		entry.Password = RandomString(c.Config.PasswordLength,
+			c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
+	} else {
+		entry.Password = c.input("Enter the new password: ", entry.Password, false)
+	}
+	entry.OTP = c.input("Enter the new OTP key: ", entry.OTP, false)
+	entry.Comment = c.input("Enter a new comment: ", entry.Comment, true)
 
-  err := c.Wallet.UpdateEntry(entry)
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
-  c.Wallet.Save()
+	err := c.Wallet.UpdateEntry(entry)
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
+	c.Wallet.Save()
 }
 
 // Copy login and password from an entry
 func (c *Cli) copyEntry() {
-  c.loadWallet()
-  entry := c.selectEntry()
+	c.loadWallet()
+	entry := c.selectEntry()
 
-  for true {
-    choice := c.input("select one action: ", "", true)
-    switch choice {
-      case "l":
-        clipboard.WriteAll(entry.User)
-      case "p":
-        clipboard.WriteAll(entry.Password)
-      case "o":
-        code, time, _ := entry.OTPCode()
-        fmt.Printf("this OTP code is available for %d seconds\n", time)
-        clipboard.WriteAll(code)
-      case "q":
-        os.Exit(0)
-      default:
-        fmt.Println("l -> copy login")
-        fmt.Println("p -> copy password")
-        fmt.Println("o -> copy OTP code")
-        fmt.Println("q -> quit")
-    }
-  }
+	for true {
+		choice := c.input("select one action: ", "", true)
+		switch choice {
+		case "l":
+			clipboard.WriteAll(entry.User)
+		case "p":
+			clipboard.WriteAll(entry.Password)
+		case "o":
+			code, time, _ := entry.OTPCode()
+			fmt.Printf("this OTP code is available for %d seconds\n", time)
+			clipboard.WriteAll(code)
+		case "q":
+			os.Exit(0)
+		default:
+			fmt.Println("l -> copy login")
+			fmt.Println("p -> copy password")
+			fmt.Println("o -> copy OTP code")
+			fmt.Println("q -> quit")
+		}
+	}
 }
 
 // Import entries from json file
 func (c *Cli) ImportWallet() {
-  c.loadWallet()
+	c.loadWallet()
 
-   _, err := os.Stat(*IMPORT)
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	_, err := os.Stat(*IMPORT)
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  data, err := ioutil.ReadFile(*IMPORT)
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	data, err := ioutil.ReadFile(*IMPORT)
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  err = c.Wallet.Import(data)
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	err = c.Wallet.Import(data)
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  err = c.Wallet.Save()
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	err = c.Wallet.Save()
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  fmt.Println("the import was successful")
+	fmt.Println("the import was successful")
 }
 
 // Export a wallet in json format
 func (c *Cli) ExportWallet() {
-  c.loadWallet()
+	c.loadWallet()
 
-  data, err := c.Wallet.Export()
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	data, err := c.Wallet.Export()
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  err = ioutil.WriteFile(*EXPORT, data, 0600)
-  if err != nil {
-    c.error(fmt.Sprintf("%s", err))
-  }
+	err = ioutil.WriteFile(*EXPORT, data, 0600)
+	if err != nil {
+		c.error(fmt.Sprintf("%s", err))
+	}
 
-  fmt.Println("the export was successful")
+	fmt.Println("the export was successful")
 }

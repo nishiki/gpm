@@ -14,58 +14,58 @@
 
 package gpm
 
-import(
-  "fmt"
-  "time"
-  "net/url"
+import (
+	"fmt"
+	"net/url"
+	"time"
 
-  "github.com/pquerna/otp/totp"
+	"github.com/pquerna/otp/totp"
 )
 
 // Entry struct have the password informations
 type Entry struct {
-  Name       string
-  ID         string
-  URI        string
-  User       string
-  Password   string
-  OTP        string
-  Group      string
-  Comment    string
-  Create     int64
-  LastUpdate int64
+	Name       string
+	ID         string
+	URI        string
+	User       string
+	Password   string
+	OTP        string
+	Group      string
+	Comment    string
+	Create     int64
+	LastUpdate int64
 }
 
 // Verify if the item have'nt error
 func (e *Entry) Verify() error {
-  if e.ID == "" {
-    return fmt.Errorf("you must generate an ID")
-  }
+	if e.ID == "" {
+		return fmt.Errorf("you must generate an ID")
+	}
 
-  if e.Name == "" {
-    return fmt.Errorf("you must define a name")
-  }
+	if e.Name == "" {
+		return fmt.Errorf("you must define a name")
+	}
 
-  uri, _ := url.Parse(e.URI)
-  if e.URI != "" && uri.Host == "" {
-    return fmt.Errorf("the uri isn't a valid uri")
-  }
+	uri, _ := url.Parse(e.URI)
+	if e.URI != "" && uri.Host == "" {
+		return fmt.Errorf("the uri isn't a valid uri")
+	}
 
-  return nil
+	return nil
 }
 
 // GenerateID create a new id for the entry
 func (e *Entry) GenerateID() {
-  e.ID = fmt.Sprintf("%d", time.Now().UnixNano())
+	e.ID = fmt.Sprintf("%d", time.Now().UnixNano())
 }
 
 // OTPCode generate an OTP Code
-func (e *Entry) OTPCode() (string, int64, error){
-  code, err := totp.GenerateCode(e.OTP, time.Now())
-  time := 30 - (time.Now().Unix() % 30)
-  if err != nil {
-    return "", 0, err
-  }
+func (e *Entry) OTPCode() (string, int64, error) {
+	code, err := totp.GenerateCode(e.OTP, time.Now())
+	time := 30 - (time.Now().Unix() % 30)
+	if err != nil {
+		return "", 0, err
+	}
 
-  return code, time, nil
+	return code, time, nil
 }

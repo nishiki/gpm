@@ -15,90 +15,90 @@
 package gpm
 
 import (
-  "encoding/json"
-  "fmt"
-  "io/ioutil"
-  "os"
-  "os/user"
-  "runtime"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/user"
+	"runtime"
 )
 
 // Config struct contain the config
 type Config struct {
-  WalletDir       string `json:"wallet_dir"`
-  WalletDefault   string `json:"wallet_default"`
-  PasswordLength  int    `json:"password_length"`
-  PasswordLetter  bool   `json:"password_letter"`
-  PasswordDigit   bool   `json:"password_digit"`
-  PasswordSpecial bool   `json:"password_special"`
+	WalletDir       string `json:"wallet_dir"`
+	WalletDefault   string `json:"wallet_default"`
+	PasswordLength  int    `json:"password_length"`
+	PasswordLetter  bool   `json:"password_letter"`
+	PasswordDigit   bool   `json:"password_digit"`
+	PasswordSpecial bool   `json:"password_special"`
 }
 
 // Init the configuration
 func (c *Config) Init() error {
-  user, err := user.Current()
-  if err != nil {
-    return err
-  }
+	user, err := user.Current()
+	if err != nil {
+		return err
+	}
 
-  if runtime.GOOS == "darwin" {
-    c.WalletDir = fmt.Sprintf("%s/Library/Preferences/gpm", user.HomeDir)
-  } else if runtime.GOOS == "windows" {
-    c.WalletDir = fmt.Sprintf("%s/AppData/Local/gpm", user.HomeDir)
-  } else {
-    c.WalletDir = fmt.Sprintf("%s/.config/gpm", user.HomeDir)
-  }
-  c.WalletDefault   = "default"
-  c.PasswordLength  = 16
-  c.PasswordLetter  = true
-  c.PasswordDigit   = true
-  c.PasswordSpecial = false
+	if runtime.GOOS == "darwin" {
+		c.WalletDir = fmt.Sprintf("%s/Library/Preferences/gpm", user.HomeDir)
+	} else if runtime.GOOS == "windows" {
+		c.WalletDir = fmt.Sprintf("%s/AppData/Local/gpm", user.HomeDir)
+	} else {
+		c.WalletDir = fmt.Sprintf("%s/.config/gpm", user.HomeDir)
+	}
+	c.WalletDefault = "default"
+	c.PasswordLength = 16
+	c.PasswordLetter = true
+	c.PasswordDigit = true
+	c.PasswordSpecial = false
 
-  return nil
+	return nil
 }
 
 // Load the configuration from a file
 func (c *Config) Load(path string) error {
-  err := c.Init()
-  if err != nil {
-    return err
-  }
+	err := c.Init()
+	if err != nil {
+		return err
+	}
 
-  if path != "" {
-    _, err = os.Stat(path)
-    if err != nil {
+	if path != "" {
+		_, err = os.Stat(path)
+		if err != nil {
 
-    }
+		}
 
-    data, err := ioutil.ReadFile(path)
-    if err != nil {
-      return err
-    }
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
 
-    err = json.Unmarshal(data, &c)
-    if err != nil {
-      return err
-    }
-  }
+		err = json.Unmarshal(data, &c)
+		if err != nil {
+			return err
+		}
+	}
 
-  err = os.MkdirAll(c.WalletDir, 0700)
-  if err != nil {
-    return err
-  }
+	err = os.MkdirAll(c.WalletDir, 0700)
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }
 
 // Save the configuration
 func (c *Config) Save(path string) error {
-  data, err := json.Marshal(&c)
-  if err != nil {
-    return err
-  }
+	data, err := json.Marshal(&c)
+	if err != nil {
+		return err
+	}
 
-  err = ioutil.WriteFile(path, []byte(data), 0644)
-  if err != nil {
-    return err
-  }
+	err = ioutil.WriteFile(path, []byte(data), 0644)
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }

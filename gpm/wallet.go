@@ -15,206 +15,205 @@
 package gpm
 
 import (
-  "encoding/json"
-  "fmt"
-  "io/ioutil"
-  "os"
-  "regexp"
-  "time"
-  "sort"
-  "strings"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"regexp"
+	"sort"
+	"strings"
+	"time"
 )
-
 
 // WalletFile contains the data in file
 type WalletFile struct {
-  Salt string
-  Data string
+	Salt string
+	Data string
 }
 
 // Wallet struct have wallet informations
 type Wallet struct {
-  Name       string
-  Path       string
-  Salt       string
-  Passphrase string
-  Entries    []Entry
+	Name       string
+	Path       string
+	Salt       string
+	Passphrase string
+	Entries    []Entry
 }
 
 // Load all wallet's Entrys from the disk
 func (w *Wallet) Load() error {
-  var walletFile WalletFile
+	var walletFile WalletFile
 
-  _, err := os.Stat(w.Path)
-  if err != nil {
-    return nil
-  }
+	_, err := os.Stat(w.Path)
+	if err != nil {
+		return nil
+	}
 
-  content, err := ioutil.ReadFile(w.Path)
-  if err != nil {
-    return err
-  }
+	content, err := ioutil.ReadFile(w.Path)
+	if err != nil {
+		return err
+	}
 
-  err = json.Unmarshal(content, &walletFile)
-  if err != nil {
-    return err
-  }
+	err = json.Unmarshal(content, &walletFile)
+	if err != nil {
+		return err
+	}
 
-  w.Salt = walletFile.Salt
-  data, err := Decrypt(string(walletFile.Data), w.Passphrase, w.Salt)
-  if err != nil {
-    return err
-  }
+	w.Salt = walletFile.Salt
+	data, err := Decrypt(string(walletFile.Data), w.Passphrase, w.Salt)
+	if err != nil {
+		return err
+	}
 
-  err = json.Unmarshal(data, &w.Entries)
-  if err != nil {
-    return err
-  }
+	err = json.Unmarshal(data, &w.Entries)
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }
 
 // Save the wallet on the disk
 func (w *Wallet) Save() error {
-  if w.Salt == "" {
-    w.Salt = RandomString(12, true, true, false)
-  }
+	if w.Salt == "" {
+		w.Salt = RandomString(12, true, true, false)
+	}
 
-  data, err := json.Marshal(&w.Entries)
-  if err != nil {
-    return err
-  }
+	data, err := json.Marshal(&w.Entries)
+	if err != nil {
+		return err
+	}
 
-  dataEncrypted, err := Encrypt(data, w.Passphrase, w.Salt)
-  if err != nil {
-    return err
-  }
+	dataEncrypted, err := Encrypt(data, w.Passphrase, w.Salt)
+	if err != nil {
+		return err
+	}
 
-  walletFile := WalletFile{ Salt: w.Salt, Data: dataEncrypted }
-  content, err := json.Marshal(&walletFile)
-  if err != nil {
-    return err
-  }
+	walletFile := WalletFile{Salt: w.Salt, Data: dataEncrypted}
+	content, err := json.Marshal(&walletFile)
+	if err != nil {
+		return err
+	}
 
-  err = ioutil.WriteFile(w.Path, content, 0600)
-  if err != nil {
-    return err
-  }
+	err = ioutil.WriteFile(w.Path, content, 0600)
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }
 
 // SearchEntry return an array with the array expected with the pattern
 func (w *Wallet) SearchEntry(pattern string, group string) []Entry {
-  var entries []Entry
-  r := regexp.MustCompile(strings.ToLower(pattern))
+	var entries []Entry
+	r := regexp.MustCompile(strings.ToLower(pattern))
 
-  for _, entry := range w.Entries {
-    if group != "" && strings.ToLower(entry.Group) != strings.ToLower(group) {
-      continue
-    }
-    if r.Match([]byte(strings.ToLower(entry.Name))) ||
-      r.Match([]byte(strings.ToLower(entry.Comment))) || r.Match([]byte(strings.ToLower(entry.URI))) {
-      entries = append(entries, entry)
-    }
-  }
+	for _, entry := range w.Entries {
+		if group != "" && strings.ToLower(entry.Group) != strings.ToLower(group) {
+			continue
+		}
+		if r.Match([]byte(strings.ToLower(entry.Name))) ||
+			r.Match([]byte(strings.ToLower(entry.Comment))) || r.Match([]byte(strings.ToLower(entry.URI))) {
+			entries = append(entries, entry)
+		}
+	}
 
-  sort.Slice(entries, func(i, j int) bool {
-    return entries[i].Group < entries[j].Group
-  })
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Group < entries[j].Group
+	})
 
-  return entries
+	return entries
 }
 
 // SearchEntryByID return an Entry
 func (w *Wallet) SearchEntryByID(id string) Entry {
-  for _, entry := range w.Entries {
-    if entry.ID == id {
-      return entry
-    }
-  }
+	for _, entry := range w.Entries {
+		if entry.ID == id {
+			return entry
+		}
+	}
 
-  return Entry{}
+	return Entry{}
 }
 
 // AddEntry append a new entry to wallet
 func (w *Wallet) AddEntry(entry Entry) error {
-  err := entry.Verify()
-  if err != nil {
-    return err
-  }
+	err := entry.Verify()
+	if err != nil {
+		return err
+	}
 
- if w.SearchEntryByID(entry.ID) != (Entry{}) {
-   return fmt.Errorf("the id already exists in wallet, can't add the entry")
- }
+	if w.SearchEntryByID(entry.ID) != (Entry{}) {
+		return fmt.Errorf("the id already exists in wallet, can't add the entry")
+	}
 
-  entry.Create = time.Now().Unix()
-  entry.LastUpdate = entry.Create
-  w.Entries = append(w.Entries, entry)
+	entry.Create = time.Now().Unix()
+	entry.LastUpdate = entry.Create
+	w.Entries = append(w.Entries, entry)
 
-  return nil
+	return nil
 }
 
 // DeleteEntry delete an entry to wallet
 func (w *Wallet) DeleteEntry(id string) error {
-  for index, entry := range w.Entries {
-    if entry.ID == id {
-      w.Entries = append(w.Entries[:index], w.Entries[index+1:]...)
-      return nil
-    }
-  }
+	for index, entry := range w.Entries {
+		if entry.ID == id {
+			w.Entries = append(w.Entries[:index], w.Entries[index+1:]...)
+			return nil
+		}
+	}
 
-  return fmt.Errorf("entry not found with this id")
+	return fmt.Errorf("entry not found with this id")
 }
 
 // UpdateEntry update an Entry to wallet
 func (w *Wallet) UpdateEntry(entry Entry) error {
-  oldEntry := w.SearchEntryByID(entry.ID)
-  if oldEntry == (Entry{}) {
-    return fmt.Errorf("entry not found with this id")
-  }
+	oldEntry := w.SearchEntryByID(entry.ID)
+	if oldEntry == (Entry{}) {
+		return fmt.Errorf("entry not found with this id")
+	}
 
-  err := entry.Verify()
-  if err != nil {
-    return err
-  }
+	err := entry.Verify()
+	if err != nil {
+		return err
+	}
 
-  entry.LastUpdate = time.Now().Unix()
-  for index, i := range w.Entries {
-    if entry.ID == i.ID {
-      w.Entries[index] = entry
-      return nil
-    }
-  }
+	entry.LastUpdate = time.Now().Unix()
+	for index, i := range w.Entries {
+		if entry.ID == i.ID {
+			w.Entries[index] = entry
+			return nil
+		}
+	}
 
-  return fmt.Errorf("unknown error during the update")
+	return fmt.Errorf("unknown error during the update")
 }
 
 // Import a wallet from a json string
 func (w *Wallet) Import(data []byte) error {
-  var entries []Entry
+	var entries []Entry
 
-  err := json.Unmarshal([]byte(data), &entries)
-  if err != nil {
-    return err
-  }
+	err := json.Unmarshal([]byte(data), &entries)
+	if err != nil {
+		return err
+	}
 
-  for _, entry := range entries {
-    err = w.AddEntry(entry)
-    if err != nil {
-      return err
-    }
-  }
+	for _, entry := range entries {
+		err = w.AddEntry(entry)
+		if err != nil {
+			return err
+		}
+	}
 
-  return nil
+	return nil
 }
 
 // Export a wallet to json
 func (w *Wallet) Export() ([]byte, error) {
-  data, err := json.Marshal(&w.Entries)
-  if err != nil {
-    return []byte{}, err
-  }
+	data, err := json.Marshal(&w.Entries)
+	if err != nil {
+		return []byte{}, err
+	}
 
-  return data, nil
+	return data, nil
 }
