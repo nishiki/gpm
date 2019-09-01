@@ -11,6 +11,7 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 - Test build with travis
 - Add entry's fields Create and LastUpdate
+- Add timeout to close wallet for the security
 
 ### Changed
 

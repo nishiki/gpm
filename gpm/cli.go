@@ -24,6 +24,7 @@ import (
 	"os"
 	"strconv"
 	"syscall"
+	"time"
 )
 
 // Cli contain config and wallet to use
@@ -112,12 +113,23 @@ func (c *Cli) selectEntry() Entry {
 		return entries[0]
 	}
 
-	for true {
-		index, err := strconv.Atoi(c.input("Select the entry: ", "", true))
-		if err == nil && index >= 0 && index+1 <= len(entries) {
-			break
+	c1 := make(chan int, 1)
+	go func(max int) {
+		for true {
+			index, err := strconv.Atoi(c.input("Select the entry: ", "", true))
+			if err == nil && index >= 0 && index+1 <= max {
+				break
+			}
+			fmt.Println("your choice is not an integer or is out of range")
 		}
-		fmt.Println("your choice is not an integer or is out of range")
+		c1 <- index
+	}(len(entries))
+
+	select {
+		case res := <-c1:
+			index = res
+		case <-time.After(30 * time.Second):
+			os.Exit(1)
 	}
 
 	return entries[index]
@@ -244,25 +256,34 @@ func (c *Cli) copyEntry() {
 	c.loadWallet()
 	entry := c.selectEntry()
 
-	for true {
-		choice := c.input("select one action: ", "", true)
-		switch choice {
-		case "l":
-			clipboard.WriteAll(entry.User)
-		case "p":
-			clipboard.WriteAll(entry.Password)
-		case "o":
-			code, time, _ := entry.OTPCode()
-			fmt.Printf("this OTP code is available for %d seconds\n", time)
-			clipboard.WriteAll(code)
-		case "q":
-			os.Exit(0)
-		default:
-			fmt.Println("l -> copy login")
-			fmt.Println("p -> copy password")
-			fmt.Println("o -> copy OTP code")
-			fmt.Println("q -> quit")
+	go func() {
+		for true {
+			choice := c.input("select one action: ", "", true)
+			switch choice {
+			case "l":
+				clipboard.WriteAll(entry.User)
+			case "p":
+				clipboard.WriteAll(entry.Password)
+			case "o":
+				code, time, _ := entry.OTPCode()
+				fmt.Printf("this OTP code is available for %d seconds\n", time)
+				clipboard.WriteAll(code)
+			case "q":
+				clipboard.WriteAll("")
+				os.Exit(0)
+			default:
+				fmt.Println("l -> copy login")
+				fmt.Println("p -> copy password")
+				fmt.Println("o -> copy OTP code")
+				fmt.Println("q -> quit")
+			}
 		}
+	}()
+
+	select {
+		case <-time.After(90 * time.Second):
+			clipboard.WriteAll("")
+			os.Exit(1)
 	}
 }
 
