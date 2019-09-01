@@ -7,6 +7,8 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 ## Unreleased
 
+## v1.2.0 - 2019-09-01
+
 ### Added
 
 - Test build with travis
