@@ -7,6 +7,8 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 ## Unreleased
 
+## v1.2.1 - 2019-10-19
+
 ### Fixed
 
 - Bug in select item
