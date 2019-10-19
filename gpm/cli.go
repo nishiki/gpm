@@ -118,11 +118,11 @@ func (c *Cli) selectEntry() Entry {
 		for true {
 			index, err := strconv.Atoi(c.input("Select the entry: ", "", true))
 			if err == nil && index >= 0 && index+1 <= max {
+				c1 <- index
 				break
 			}
 			fmt.Println("your choice is not an integer or is out of range")
 		}
-		c1 <- index
 	}(len(entries))
 
 	select {
