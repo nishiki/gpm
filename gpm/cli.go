@@ -168,6 +168,26 @@ func (c *Cli) UnlockWallet(wallet string) error {
 	return err
 }
 
+func (c *Cli) DeleteEntry(entry Entry) bool {
+	if !c.ChoiceBox("Do you want delete this entry ?", false) {
+		return false
+	}
+
+	err := c.Wallet.DeleteEntry(entry.ID)
+	if err != nil {
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
+	}
+
+	err = c.Wallet.Save()
+	if err != nil {
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
+	}
+
+	return true
+}
+
 func (c *Cli) UpdateEntry(entry Entry) bool {
 	entry.Name = c.InputBox("Name", entry.Name, false)
 	entry.Group = c.InputBox("Group", entry.Group, false)
@@ -277,6 +297,10 @@ func (c *Cli) ListEntries() {
 		case "u":
 			if len(entries) > 0 && index >= 0 && index < len(entries) {
 				refresh = c.UpdateEntry(entries[index])
+			}
+		case "d":
+			if len(entries) > 0 && index >= 0 && index < len(entries) {
+				refresh = c.DeleteEntry(entries[index])
 			}
 		case "/":
 			pattern = c.InputBox("Search", pattern, false)
