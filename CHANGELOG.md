@@ -7,6 +7,10 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 ## Unreleased
 
+### Changed
+
+- New interface
+
 ## v1.2.1 - 2019-10-19
 
 ### Fixed

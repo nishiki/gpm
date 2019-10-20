@@ -1,332 +1,563 @@
-// Copyright 2019 Adrien Waksberg
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package gpm
 
 import (
-	"bufio"
 	"fmt"
-	"github.com/atotto/clipboard"
-	"github.com/olekukonko/tablewriter"
-	"golang.org/x/crypto/ssh/terminal"
+	"flag"
 	"io/ioutil"
 	"os"
-	"strconv"
-	"syscall"
 	"time"
+
+	ui "github.com/gizak/termui/v3"
+	"github.com/gizak/termui/v3/widgets"
+	"github.com/atotto/clipboard"
 )
 
-// Cli contain config and wallet to use
+// Options
+var (
+	LENGTH  = flag.Int("length", 16, "specify the password length")
+	CONFIG  = flag.String("config", "", "specify the config file")
+	WALLET  = flag.String("wallet", "", "specify the wallet")
+	PASSWD  = flag.Bool("password", false, "generate and print a random password")
+	DIGIT   = flag.Bool("digit", false, "use digit to generate a random password")
+	LETTER  = flag.Bool("letter", false, "use letter to generate a random password")
+	SPECIAL = flag.Bool("special", false, "use special chars to generate a random password")
+	EXPORT  = flag.String("export", "", "json file path to export a wallet")
+	IMPORT  = flag.String("import", "", "json file path to import entries")
+	HELP    = flag.Bool("help", false, "print this help message")
+)
+
+// Cli struct
 type Cli struct {
 	Config Config
 	Wallet Wallet
 }
 
-// printEntries show entries with tables
-func (c *Cli) printEntries(entries []Entry) {
-	var otp string
-	var tables map[string]*tablewriter.Table
-
-	tables = make(map[string]*tablewriter.Table)
-
-	for i, entry := range entries {
-		if entry.OTP == "" {
-			otp = ""
-		} else {
-			otp = "X"
-		}
-		if _, present := tables[entry.Group]; present == false {
-			tables[entry.Group] = tablewriter.NewWriter(os.Stdout)
-			tables[entry.Group].SetHeader([]string{"", "Name", "URI", "User", "OTP", "Comment"})
-			tables[entry.Group].SetBorder(false)
-			tables[entry.Group].SetColumnColor(
-				tablewriter.Colors{tablewriter.Normal, tablewriter.FgYellowColor},
-				tablewriter.Colors{tablewriter.Normal, tablewriter.FgWhiteColor},
-				tablewriter.Colors{tablewriter.Normal, tablewriter.FgCyanColor},
-				tablewriter.Colors{tablewriter.Normal, tablewriter.FgGreenColor},
-				tablewriter.Colors{tablewriter.Normal, tablewriter.FgWhiteColor},
-				tablewriter.Colors{tablewriter.Normal, tablewriter.FgMagentaColor})
-		}
-
-		tables[entry.Group].Append([]string{strconv.Itoa(i), entry.Name, entry.URI, entry.User, otp, entry.Comment})
+// NotificationBox print a notification
+func (c *Cli) NotificationBox(msg string, error bool) {
+	p := widgets.NewParagraph()
+	p.SetRect(25, 20, 80, 23)
+	if error {
+		p.Title = "Error"
+		p.Text = fmt.Sprintf("[%s](fg:red) ", msg)
+	} else {
+		p.Title = "Notification"
+		p.Text = fmt.Sprintf("[%s](fg:green) ", msg)
 	}
 
-	for group, table := range tables {
-		fmt.Printf("\n%s\n\n", group)
-		table.Render()
-		fmt.Println("")
+	ui.Render(p)
+}
+
+// ChoiceBox is a boolean form
+func (c *Cli) ChoiceBox(title string, choice bool) bool {
+	t := widgets.NewTabPane("Yes", "No")
+	t.SetRect(10, 10, 70, 5)
+	t.Title = title
+	t.Border = true
+	if !choice {
+		t.ActiveTabIndex = 1
+	}
+
+	uiEvents := ui.PollEvents()
+	for {
+		ui.Render(t)
+		e := <-uiEvents
+		switch e.ID {
+		case "<Enter>":
+			return choice
+		case "<Left>", "h":
+			t.FocusLeft()
+			choice = true
+		case "<Right>", "l":
+			t.FocusRight()
+			choice = false
+		}
 	}
 }
 
-// error print a message and exit)
-func (c *Cli) error(msg string) {
-	fmt.Printf("ERROR: %s\n", msg)
-	os.Exit(2)
-}
+// InputBox is string form
+func (c *Cli) InputBox(title string, input string, hidden bool) string {
+	var secret string
 
-// input from the console
-func (c *Cli) input(text string, defaultValue string, show bool) string {
-	fmt.Print(text)
+	p := widgets.NewParagraph()
+	p.SetRect(10, 10, 70, 5)
+	p.Title = title
+	p.Text = input
 
-	if show == false {
-		data, _ := terminal.ReadPassword(int(syscall.Stdin))
-		text := string(data)
-		fmt.Printf("\n")
-
-		if text == "" {
-			return defaultValue
-		}
-		return text
-	}
-
-	input := bufio.NewScanner(os.Stdin)
-	input.Scan()
-	if input.Text() == "" {
-		return defaultValue
-	}
-	return input.Text()
-}
-
-// selectEntry with a form
-func (c *Cli) selectEntry() Entry {
-	var index int
-
-	entries := c.Wallet.SearchEntry(*PATTERN, *GROUP)
-	if len(entries) == 0 {
-		fmt.Println("no entry found")
-		os.Exit(1)
-	}
-
-	c.printEntries(entries)
-	if len(entries) == 1 {
-		return entries[0]
-	}
-
-	c1 := make(chan int, 1)
-	go func(max int) {
-		for true {
-			index, err := strconv.Atoi(c.input("Select the entry: ", "", true))
-			if err == nil && index >= 0 && index+1 <= max {
-				c1 <- index
-				break
+	uiEvents := ui.PollEvents()
+	for {
+		ui.Render(p)
+		e := <-uiEvents
+		switch e.ID {
+		case "q", "<C-c>":
+			return ""
+		case "<Backspace>":
+			if len(input) >= 1 {
+				input = input[:len(input)-1]
 			}
-			fmt.Println("your choice is not an integer or is out of range")
+		case "<Enter>":
+			return input
+		case "<Space>":
+			input = input + " "
+		default:
+			input = input + e.ID
 		}
-	}(len(entries))
 
-	select {
-		case res := <-c1:
-			index = res
-		case <-time.After(30 * time.Second):
-			os.Exit(1)
+		if hidden {
+			secret = ""
+			for i := 1; i <=  int(float64(len(input)) * 1.75); i++ {
+				secret = secret + "*"
+			}
+			p.Text = secret
+		} else {
+			p.Text = input
+		}
 	}
-
-	return entries[index]
 }
 
-// loadWallet get and unlock the wallet
-func (c *Cli) loadWallet() {
+// SelectBox to select an item from a list
+func (c *Cli) SelectBox(title string, items []string) string {
+	l := widgets.NewList()
+	l.Title = title
+	l.TextStyle = ui.NewStyle(ui.ColorYellow)
+	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
+	l.WrapText = false
+	l.SetRect(10, 10, 70, 5)
+	l.Rows = items
+
+	uiEvents := ui.PollEvents()
+	for {
+		ui.Render(l)
+		e := <-uiEvents
+		switch e.ID {
+		case "q", "<C-c>", "<Escape>":
+			return ""
+		case "<Enter>":
+			if len(l.Rows) == 0 {
+				return ""
+			}
+			return l.Rows[l.SelectedRow]
+		case "j", "<Down>":
+			if len(l.Rows) > 0 {
+				l.ScrollDown()
+			}
+		case "k", "<Up>":
+			if len(l.Rows) > 0 {
+				l.ScrollUp()
+			}
+		}
+	}
+}
+
+// EntryBox to add a new entry
+func (c *Cli) EntryBox(entry Entry) {
+	p := widgets.NewParagraph()
+	p.SetRect(25, 0, 80, 20)
+	p.Text = fmt.Sprintf("%s[Name:](fg:yellow) %s\n", p.Text, entry.Name)
+	p.Text = fmt.Sprintf("%s[Group:](fg:yellow) %s\n", p.Text, entry.Group)
+	p.Text = fmt.Sprintf("%s[URI:](fg:yellow) %s\n", p.Text, entry.URI)
+	p.Text = fmt.Sprintf("%s[User:](fg:yellow) %s\n", p.Text, entry.User)
+	if entry.OTP == "" {
+		p.Text = fmt.Sprintf("%s[OTP:](fg:yellow) [no](fg:red)\n", p.Text)
+	} else {
+		p.Text = fmt.Sprintf("%s[OTP:](fg:yellow) [yes](fg:green)\n", p.Text)
+	}
+	p.Text = fmt.Sprintf("%s[Comment:](fg:yellow) %v\n", p.Text, entry.Comment)
+
+	ui.Render(p)
+}
+
+// GroupsBox to select a group
+func (c *Cli) GroupsBox() string {
+	l := widgets.NewList()
+	l.Title = "Groups"
+	l.TextStyle = ui.NewStyle(ui.ColorYellow)
+	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
+	l.WrapText = false
+	l.SetRect(25, 0, 80, 20)
+	l.Rows = append(c.Wallet.Groups(), "No group")
+
+	uiEvents := ui.PollEvents()
+	for {
+		ui.Render(l)
+		e := <-uiEvents
+		switch e.ID {
+		case "q", "<C-c>", "<Escape>":
+			return ""
+		case "<Enter>":
+			if len(l.Rows) == 0 {
+				return ""
+			}
+			return l.Rows[l.SelectedRow]
+		case "j", "<Down>":
+			if len(l.Rows) > 0 {
+				l.ScrollDown()
+			}
+		case "k", "<Up>":
+			if len(l.Rows) > 0 {
+				l.ScrollUp()
+			}
+		}
+	}
+}
+
+// HelpBox print help message
+func (c *Cli) HelpBox() {
+	p := widgets.NewParagraph()
+	p.SetRect(25, 0, 80, 20)
+	p.Title = "Short cuts"
+	p.Text = `[<escape>](fg:yellow)    clear current search
+[<enter> ](fg:yellow)    select entry or group
+[<up>    ](fg:yellow)    move cursor up
+[<down>  ](fg:yellow)    move cursor down
+[h       ](fg:yellow)    print this help message
+[q       ](fg:yellow)    quit
+[g       ](fg:yellow)    filter the entries by group
+[n       ](fg:yellow)    add a new entry
+[u       ](fg:yellow)    update an entry
+[d       ](fg:yellow)    delete an entry
+[/       ](fg:yellow)    search
+[Ctrl + b](fg:yellow)    copy username
+[Ctrl + c](fg:yellow)    copy password
+[Ctrl + o](fg:yellow)    copy OTP code
+`
+	ui.Render(p)
+
+}
+
+// UnlockWallet to decrypt a wallet
+func (c *Cli) UnlockWallet(wallet string) error {
 	var walletName string
+	var err error
 
-	passphrase := c.input("Enter the passphrase to unlock the wallet: ", "", false)
-
-	if *WALLET == "" {
+	ui.Clear()
+	if wallet == "" {
 		walletName = c.Config.WalletDefault
 	} else {
-		walletName = *WALLET
+		walletName = wallet
 	}
 
 	c.Wallet = Wallet{
-		Name:       walletName,
-		Path:       fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, walletName),
-		Passphrase: passphrase,
+		Name: walletName,
+		Path: fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, walletName),
 	}
 
-	err := c.Wallet.Load()
-	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
-	}
-}
+	for i := 0; i < 3; i++ {
+		c.Wallet.Passphrase = c.InputBox("Passphrase to unlock the wallet", "", true)
 
-// List the entry of a wallet
-func (c *Cli) listEntry() {
-	c.loadWallet()
-	entries := c.Wallet.SearchEntry(*PATTERN, *GROUP)
-	if len(entries) == 0 {
-		fmt.Println("no entry found")
-		os.Exit(1)
-	} else {
-		c.printEntries(entries)
-	}
-}
-
-// Delete an entry of a wallet
-func (c *Cli) deleteEntry() {
-	var entry Entry
-
-	c.loadWallet()
-	entry = c.selectEntry()
-	confirm := c.input("are you sure you want to remove this entry [y/N] ?", "N", true)
-
-	if confirm == "y" {
-		err := c.Wallet.DeleteEntry(entry.ID)
-		if err != nil {
-			c.error(fmt.Sprintf("%s", err))
+		err = c.Wallet.Load()
+		if err == nil {
+			return nil
 		}
-
-		err = c.Wallet.Save()
-		if err != nil {
-			c.error(fmt.Sprintf("%s", err))
-		}
-
-		fmt.Println("the entry has been deleted")
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
 	}
+
+	return err
 }
 
-// Add a new entry in wallet
-func (c *Cli) addEntry() {
-	c.loadWallet()
-
-	entry := Entry{}
-	entry.GenerateID()
-	entry.Name = c.input("Enter the name: ", "", true)
-	entry.Group = c.input("Enter the group: ", "", true)
-	entry.URI = c.input("Enter the URI: ", "", true)
-	entry.User = c.input("Enter the username: ", "", true)
-	if *RANDOM {
-		entry.Password = RandomString(c.Config.PasswordLength,
-			c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
-	} else {
-		entry.Password = c.input("Enter the new password: ", entry.Password, false)
+// DeleteEntry to delete an exisiting entry
+func (c *Cli) DeleteEntry(entry Entry) bool {
+	if !c.ChoiceBox("Do you want delete this entry ?", false) {
+		return false
 	}
-	entry.OTP = c.input("Enter the OTP key: ", "", false)
-	entry.Comment = c.input("Enter a comment: ", "", true)
 
-	err := c.Wallet.AddEntry(entry)
+	err := c.Wallet.DeleteEntry(entry.ID)
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
 	}
 
 	err = c.Wallet.Save()
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
 	}
 
-	fmt.Println("the entry has been added")
+	return true
 }
 
-// Update an entry in wallet
-func (c *Cli) updateEntry() {
-	c.loadWallet()
-
-	entry := c.selectEntry()
-	entry.Name = c.input("Enter the new name: ", entry.Name, true)
-	entry.Group = c.input("Enter the new group: ", entry.Group, true)
-	entry.URI = c.input("Enter the new URI: ", entry.URI, true)
-	entry.User = c.input("Enter the new username: ", entry.User, true)
-	if *RANDOM {
+// UpdateEntry to update an existing entry
+func (c *Cli) UpdateEntry(entry Entry) bool {
+	entry.Name = c.InputBox("Name", entry.Name, false)
+	if entry.Group == "" || c.ChoiceBox("Change the group ?", false) {
+		group := c.SelectBox("Group", append(c.Wallet.Groups(), "* Create new group *"))
+		if group == "* Create new group *" || group == "" {
+			entry.Group = c.InputBox("Group", "", false)
+		} else {
+			entry.Group = group
+		}
+	}
+	entry.URI = c.InputBox("URI", entry.URI, false)
+	entry.User = c.InputBox("Username", entry.User, false)
+	if c.ChoiceBox("Generate a new random password ?", false) {
 		entry.Password = RandomString(c.Config.PasswordLength,
 			c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
-	} else {
-		entry.Password = c.input("Enter the new password: ", entry.Password, false)
 	}
-	entry.OTP = c.input("Enter the new OTP key: ", entry.OTP, false)
-	entry.Comment = c.input("Enter a new comment: ", entry.Comment, true)
+	entry.Password = c.InputBox("Password", "", true)
+	entry.OTP = c.InputBox("OTP Key", entry.OTP, false)
+	entry.Comment = c.InputBox("Comment", entry.Comment, false)
 
 	err := c.Wallet.UpdateEntry(entry)
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
 	}
-	c.Wallet.Save()
+
+	err = c.Wallet.Save()
+	if err != nil {
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
+	}
+
+	return true
 }
 
-// Copy login and password from an entry
-func (c *Cli) copyEntry() {
-	c.loadWallet()
-	entry := c.selectEntry()
+// AddEntry to add new entry
+func (c *Cli) AddEntry() bool {
+	entry := Entry{}
+	entry.GenerateID()
+	entry.Name = c.InputBox("Name", "", false)
+	group := c.SelectBox("Group", append(c.Wallet.Groups(), "* Create new group *"))
+	if group == "* Create new group *" || group == "" {
+		entry.Group = c.InputBox("Group", "", false)
+	} else {
+		entry.Group = group
+	}
+	entry.URI = c.InputBox("URI", "", false)
+	entry.User = c.InputBox("Username", "", false)
+	if c.ChoiceBox("Generate a random password ?", true) {
+		entry.Password = RandomString(c.Config.PasswordLength,
+			c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
+	} else {
+		entry.Password = c.InputBox("Password", "", true)
+	}
+	entry.OTP = c.InputBox("OTP Key", "", false)
+	entry.Comment = c.InputBox("Comment", "", false)
 
-	go func() {
-		for true {
-			choice := c.input("select one action: ", "", true)
-			switch choice {
-			case "l":
-				clipboard.WriteAll(entry.User)
-			case "p":
-				clipboard.WriteAll(entry.Password)
-			case "o":
-				code, time, _ := entry.OTPCode()
-				fmt.Printf("this OTP code is available for %d seconds\n", time)
+	err := c.Wallet.AddEntry(entry)
+	if err != nil {
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
+	}
+
+	err = c.Wallet.Save()
+	if err != nil {
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
+	}
+
+	return true
+}
+
+// ListEntries to list all entries
+func (c *Cli) ListEntries(ch chan<- bool) {
+	var pattern, group string
+	var entries []Entry
+	var selected bool
+
+	refresh := true
+	noGroup := false
+	index := -1
+
+	l := widgets.NewList()
+	l.TextStyle = ui.NewStyle(ui.ColorYellow)
+	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
+	l.WrapText = false
+	l.SetRect(0, 0, 25, 23)
+
+	ui.Clear()
+	uiEvents := ui.PollEvents()
+	for {
+		if group != "" {
+			l.Title = fmt.Sprintf("Group: %s", group)
+		} else if noGroup {
+			l.Title = "Group: No group"
+		} else {
+			l.Title = "Group: All"
+		}
+
+		if refresh {
+			refresh = false
+			index = -1
+			entries = c.Wallet.SearchEntry(pattern, group, noGroup)
+			l.Rows = []string{}
+			for _, entry := range entries {
+				l.Rows = append(l.Rows, entry.Name)
+			}
+			ui.Clear()
+			c.NotificationBox("press h to view short cuts", false)
+		}
+
+		if len(entries) > 0 && index >= 0 && index < len(entries) {
+			selected = true
+		} else {
+			selected = false
+		}
+
+		if selected {
+			c.EntryBox(entries[index])
+		}
+
+		ui.Render(l)
+		e := <-uiEvents
+		switch e.ID {
+		case "h":
+			c.HelpBox()
+			index = -1
+		case "q":
+			clipboard.WriteAll("")
+			ch <- true
+		case "<Enter>":
+			index = l.SelectedRow
+		case "<Escape>":
+			pattern = ""
+			group = "all"
+			refresh = true
+		case "n":
+			refresh = c.AddEntry()
+		case "u":
+			if selected {
+				refresh = c.UpdateEntry(entries[index])
+			}
+		case "d":
+			if selected {
+				refresh = c.DeleteEntry(entries[index])
+			}
+		case "/":
+			pattern = c.InputBox("Search", pattern, false)
+			refresh = true
+		case "g":
+			group = c.GroupsBox()
+			noGroup = false
+			if group == "No group" {
+				group = ""
+				noGroup = true
+			}
+			refresh = true
+		case "j", "<Down>":
+			if len(entries) > 0 {
+				l.ScrollDown()
+			}
+		case "k", "<Up>":
+			if len(entries) > 0 {
+				l.ScrollUp()
+			}
+		case "<C-b>":
+			if selected {
+				clipboard.WriteAll(entries[index].User)
+				c.NotificationBox("the username is copied in clipboard", false)
+			}
+		case "<C-c>":
+			if selected {
+				c.NotificationBox("the password is copied in clipboard", false)
+				clipboard.WriteAll(entries[index].Password)
+			}
+		case "<C-o>":
+			if selected {
+				code, time, _ := entries[index].OTPCode()
+				c.NotificationBox(fmt.Sprintf("the OTP code is available for %d seconds", time), false)
 				clipboard.WriteAll(code)
-			case "q":
-				clipboard.WriteAll("")
-				os.Exit(0)
-			default:
-				fmt.Println("l -> copy login")
-				fmt.Println("p -> copy password")
-				fmt.Println("o -> copy OTP code")
-				fmt.Println("q -> quit")
 			}
 		}
-	}()
 
-	select {
-		case <-time.After(90 * time.Second):
-			clipboard.WriteAll("")
-			os.Exit(1)
+		ch <- false
 	}
 }
 
-// Import entries from json file
-func (c *Cli) ImportWallet() {
-	c.loadWallet()
-
+// ImportWallet import entries from json file
+func (c *Cli) ImportWallet() error {
 	_, err := os.Stat(*IMPORT)
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		return err
 	}
 
 	data, err := ioutil.ReadFile(*IMPORT)
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		return err
 	}
 
 	err = c.Wallet.Import(data)
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		return err
 	}
 
 	err = c.Wallet.Save()
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		return err
 	}
 
-	fmt.Println("the import was successful")
+	return nil
 }
 
-// Export a wallet in json format
-func (c *Cli) ExportWallet() {
-	c.loadWallet()
-
+// ExportWallet export a wallet in json format
+func (c *Cli) ExportWallet() error {
 	data, err := c.Wallet.Export()
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		return err
 	}
 
 	err = ioutil.WriteFile(*EXPORT, data, 0600)
 	if err != nil {
-		c.error(fmt.Sprintf("%s", err))
+		return err
 	}
 
-	fmt.Println("the export was successful")
+	return nil
+}
+
+// Run the cli interface
+func Run() {
+	var c Cli
+
+	flag.Parse()
+	c.Config.Load(*CONFIG)
+
+	if *HELP {
+		flag.PrintDefaults()
+		os.Exit(1)
+	} else if *PASSWD {
+		fmt.Println(RandomString(*LENGTH, *LETTER, *DIGIT, *SPECIAL))
+		os.Exit(0)
+	}
+
+	if err := ui.Init(); err != nil {
+		fmt.Printf("failed to initialize termui: %v\n", err)
+		os.Exit(2)
+	}
+	defer ui.Close()
+
+	err := c.UnlockWallet(*WALLET)
+	if err != nil {
+		ui.Close()
+		fmt.Printf("failed to open the wallet: %v\n", err)
+		os.Exit(2)
+	}
+
+	if *IMPORT != "" {
+		err := c.ImportWallet()
+		if err != nil {
+			ui.Close()
+			fmt.Printf("failed to import: %v\n", err)
+			os.Exit(2)
+		}
+	} else if *EXPORT != "" {
+		err := c.ExportWallet()
+		if err != nil {
+			ui.Close()
+			fmt.Printf("failed to export: %v\n", err)
+			os.Exit(2)
+		}
+	} else {
+		c1 := make(chan bool)
+		go c.ListEntries(c1)
+
+		for {
+			select {
+				case res := <-c1:
+					if res {
+						return
+					}
+				case <-time.After(300 * time.Second):
+					return
+			}
+		}
+	}
 }
