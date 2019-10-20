@@ -2,7 +2,7 @@ package gpm
 
 import (
 	"fmt"
-	"log"
+	"os"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -27,17 +27,17 @@ func (c *Cli) NotificationBox(msg string, error bool) {
 	ui.Render(p)
 }
 
-func (c *Cli) InputBox(title string, hidden bool) string {
-	var input, secret string
+func (c *Cli) InputBox(title string, input string, hidden bool) string {
+	var secret string
 
 	p := widgets.NewParagraph()
 	p.SetRect(10, 10, 70, 5)
 	p.Title = title
-
-	ui.Render(p)
+	p.Text = input
 
 	uiEvents := ui.PollEvents()
 	for {
+		ui.Render(p)
 		e := <-uiEvents
 		switch e.ID {
 		case "q", "<C-c>":
@@ -63,7 +63,6 @@ func (c *Cli) InputBox(title string, hidden bool) string {
 		} else {
 			p.Text = input
 		}
-		ui.Render(p)
 	}
 }
 
@@ -82,35 +81,6 @@ func (c *Cli) EntryBox(entry Entry) {
 	p.Text = fmt.Sprintf("%s[Comment:](fg:yellow) %v\n", p.Text, entry.Comment)
 
 	ui.Render(p)
-}
-
-func (c *Cli) UnlockWallet(wallet string) error {
-	var walletName string
-	var err error
-
-	ui.Clear()
-	if wallet == "" {
-		walletName = c.Config.WalletDefault
-	} else {
-		walletName = wallet
-	}
-
-	c.Wallet = Wallet{
-		Name: walletName,
-		Path: fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, walletName),
-	}
-
-	for i := 0; i < 3; i++ {
-		c.Wallet.Passphrase = c.InputBox("Passphrase to unlock the wallet", true)
-
-		err = c.Wallet.Load()
-		if err == nil {
-			return nil
-		}
-		c.NotificationBox(fmt.Sprintf("%s", err), true)
-	}
-
-	return err
 }
 
 func (c *Cli) GroupsBox() string {
@@ -143,16 +113,67 @@ func (c *Cli) GroupsBox() string {
 	}
 }
 
+func (c *Cli) UnlockWallet(wallet string) error {
+	var walletName string
+	var err error
+
+	ui.Clear()
+	if wallet == "" {
+		walletName = c.Config.WalletDefault
+	} else {
+		walletName = wallet
+	}
+
+	c.Wallet = Wallet{
+		Name: walletName,
+		Path: fmt.Sprintf("%s/%s.gpm", c.Config.WalletDir, walletName),
+	}
+
+	for i := 0; i < 3; i++ {
+		c.Wallet.Passphrase = c.InputBox("Passphrase to unlock the wallet", "", true)
+
+		err = c.Wallet.Load()
+		if err == nil {
+			return nil
+		}
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+	}
+
+	return err
+}
+
+func (c *Cli) UpdateEntry(entry Entry) error {
+	entry.Name = c.InputBox("Name", entry.Name, false)
+	entry.Group = c.InputBox("Group", entry.Group, false)
+	entry.URI = c.InputBox("URI", entry.URI, false)
+	entry.User = c.InputBox("Username", entry.User, false)
+	entry.Password = c.InputBox("Password", "", true)
+	entry.OTP = c.InputBox("OTP Key", entry.OTP, false)
+	entry.Comment = c.InputBox("Comment", entry.Comment, false)
+
+	err := c.Wallet.UpdateEntry(entry)
+	if err != nil {
+		return err
+	}
+
+	err = c.Wallet.Save()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Cli) AddEntry() error {
 	entry := Entry{}
 	entry.GenerateID()
-	entry.Name = c.InputBox("Name", false)
-	entry.Group = c.InputBox("Group", false)
-	entry.URI = c.InputBox("URI", false)
-	entry.User = c.InputBox("Username", false)
-	entry.Password = c.InputBox("Password", true)
-	entry.OTP = c.InputBox("OTP Key", false)
-	entry.Comment = c.InputBox("Comment", false)
+	entry.Name = c.InputBox("Name", "", false)
+	entry.Group = c.InputBox("Group", "", false)
+	entry.URI = c.InputBox("URI", "", false)
+	entry.User = c.InputBox("Username", "", false)
+	entry.Password = c.InputBox("Password", "", true)
+	entry.OTP = c.InputBox("OTP Key", "", false)
+	entry.Comment = c.InputBox("Comment", "", false)
 
 	err := c.Wallet.AddEntry(entry)
 	if err != nil {
@@ -216,8 +237,17 @@ func (c *Cli) ListEntries() {
 			} else {
 				c.NotificationBox(fmt.Sprintf("%s", err), true)
 			}
+		case "u":
+			if len(entries) > 0 && index >= 0 && index < len(entries) {
+				err := c.UpdateEntry(entries[index])
+				if err == nil {
+					refresh = true
+				} else {
+					c.NotificationBox(fmt.Sprintf("%s", err), true)
+				}
+			}
 		case "/":
-			pattern = c.InputBox("Search", false)
+			pattern = c.InputBox("Search", pattern, false)
 			refresh = true
 		case "g":
 			group = c.GroupsBox()
@@ -239,13 +269,16 @@ func Run() {
 	c.Config.Load("")
 
 	if err := ui.Init(); err != nil {
-		log.Fatalf("failed to initialize termui: %v", err)
+		fmt.Printf("failed to initialize termui: %v\n", err)
+		os.Exit(2)
 	}
 	defer ui.Close()
 
 	err := c.UnlockWallet("test")
 	if err != nil {
-		return
+		ui.Close()
+		fmt.Printf("failed to open the wallet: %v\n", err)
+		os.Exit(2)
 	}
 
 	c.ListEntries()
