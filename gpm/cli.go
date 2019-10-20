@@ -143,7 +143,11 @@ func (c *Cli) GroupsBox() string {
 		case "q", "<C-c>", "<Escape>":
 			return ""
 		case "<Enter>":
-			return l.Rows[l.SelectedRow]
+			if len(l.Rows) == 0 {
+				return ""
+		  } else {
+				return l.Rows[l.SelectedRow]
+			}
 		case "j", "<Down>":
 			if len(l.Rows) > 0 {
 				l.ScrollDown()
@@ -292,7 +296,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 			ui.Clear()
 		}
 
-		if index >= 0 {
+		if len(entries) > 0 && index >= 0 && index < len(entries) {
 			c.EntryBox(entries[index])
 		}
 
