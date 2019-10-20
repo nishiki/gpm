@@ -13,21 +13,26 @@ type Cli struct {
 	Wallet Wallet
 }
 
-func (c *Cli) ErrorBox(msg string) {
+func (c *Cli) NotificationBox(msg string, error bool) {
 	p := widgets.NewParagraph()
-	p.Title = "Notification"
-	p.SetRect(10, 0, 70, 5)
-	p.Text = fmt.Sprintf("[ERROR: %s](fg:red) ", msg)
+	p.SetRect(25, 20, 80, 23)
+	if error {
+		p.Title = "Error"
+		p.Text = fmt.Sprintf("[%s](fg:red) ", msg)
+	} else {
+		p.Title = "Notification"
+		p.Text = fmt.Sprintf("[%s](fg:green) ", msg)
+	}
 
 	ui.Render(p)
 }
 
-func (c *Cli) InputBox(msg string, hidden bool) string {
+func (c *Cli) InputBox(title string, hidden bool) string {
 	var input, secret string
 
 	p := widgets.NewParagraph()
 	p.SetRect(10, 10, 70, 5)
-	p.Text = fmt.Sprintf("%s ", msg)
+	p.Title = title
 
 	ui.Render(p)
 
@@ -54,9 +59,9 @@ func (c *Cli) InputBox(msg string, hidden bool) string {
 			for i := 1; i <=  int(float64(len(input)) * 1.75); i++ {
 				secret = secret + "*"
 			}
-			p.Text = fmt.Sprintf("%s %s", msg, secret)
+			p.Text = secret
 		} else {
-			p.Text = fmt.Sprintf("%s %s", msg, input)
+			p.Text = input
 		}
 		ui.Render(p)
 	}
@@ -65,7 +70,7 @@ func (c *Cli) InputBox(msg string, hidden bool) string {
 func (c *Cli) EntryBox(entry Entry) {
 	p := widgets.NewParagraph()
 	p.Title = "Entry"
-	p.SetRect(25, 0, 80, 23)
+	p.SetRect(25, 0, 80, 20)
 	p.Text = fmt.Sprintf("%s[Name:](fg:yellow) %s\n", p.Text, entry.Name)
 	p.Text = fmt.Sprintf("%s[URI:](fg:yellow) %s\n", p.Text, entry.URI)
 	p.Text = fmt.Sprintf("%s[User:](fg:yellow) %s\n", p.Text, entry.User)
@@ -96,13 +101,13 @@ func (c *Cli) UnlockWallet(wallet string) error {
 	}
 
 	for i := 0; i < 3; i++ {
-		c.Wallet.Passphrase = c.InputBox("Enter the passphrase to unlock the wallet:\n", true)
+		c.Wallet.Passphrase = c.InputBox("Passphrase to unlock the wallet", true)
 
 		err = c.Wallet.Load()
 		if err == nil {
 			return nil
 		}
-		c.ErrorBox(fmt.Sprintf("%s", err))
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
 	}
 
 	return err
@@ -136,6 +141,30 @@ func (c *Cli) GroupsBox() string {
 			}
 		}
 	}
+}
+
+func (c *Cli) AddEntry() error {
+	entry := Entry{}
+	entry.GenerateID()
+	entry.Name = c.InputBox("Name", false)
+	entry.Group = c.InputBox("Group", false)
+	entry.URI = c.InputBox("URI", false)
+	entry.User = c.InputBox("Username", false)
+	entry.Password = c.InputBox("Password", true)
+	entry.OTP = c.InputBox("OTP Key", false)
+	entry.Comment = c.InputBox("Comment", false)
+
+	err := c.Wallet.AddEntry(entry)
+	if err != nil {
+		return err
+	}
+
+	err = c.Wallet.Save()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Cli) ListEntries() {
@@ -180,6 +209,13 @@ func (c *Cli) ListEntries() {
 		case "<Escape>":
 			pattern = ""
 			refresh = true
+		case "n":
+			err := c.AddEntry()
+			if err == nil {
+				refresh = true
+			} else {
+				c.NotificationBox(fmt.Sprintf("%s", err), true)
+			}
 		case "/":
 			pattern = c.InputBox("Search", false)
 			refresh = true
