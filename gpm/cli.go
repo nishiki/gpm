@@ -27,6 +27,32 @@ func (c *Cli) NotificationBox(msg string, error bool) {
 	ui.Render(p)
 }
 
+func (c *Cli) ChoiceBox(title string, choice bool) bool {
+	t := widgets.NewTabPane("Yes", "No")
+	t.SetRect(10, 10, 70, 5)
+	t.Title = title
+	t.Border = true
+	if !choice {
+		t.ActiveTabIndex = 1
+	}
+
+	uiEvents := ui.PollEvents()
+	for {
+		ui.Render(t)
+		e := <-uiEvents
+		switch e.ID {
+		case "<Enter>":
+			return choice
+		case "<Left>", "h":
+			t.FocusLeft()
+			choice = true
+		case "<Right>", "l":
+			t.FocusRight()
+			choice = false
+		}
+	}
+}
+
 func (c *Cli) InputBox(title string, input string, hidden bool) string {
 	var secret string
 
@@ -147,6 +173,10 @@ func (c *Cli) UpdateEntry(entry Entry) bool {
 	entry.Group = c.InputBox("Group", entry.Group, false)
 	entry.URI = c.InputBox("URI", entry.URI, false)
 	entry.User = c.InputBox("Username", entry.User, false)
+	if c.ChoiceBox("Generate a new random password ?", false) {
+		entry.Password = RandomString(c.Config.PasswordLength,
+			c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
+	}
 	entry.Password = c.InputBox("Password", "", true)
 	entry.OTP = c.InputBox("OTP Key", entry.OTP, false)
 	entry.Comment = c.InputBox("Comment", entry.Comment, false)
@@ -173,7 +203,12 @@ func (c *Cli) AddEntry() bool {
 	entry.Group = c.InputBox("Group", "", false)
 	entry.URI = c.InputBox("URI", "", false)
 	entry.User = c.InputBox("Username", "", false)
-	entry.Password = c.InputBox("Password", "", true)
+	if c.ChoiceBox("Generate a random password ?", true) {
+		entry.Password = RandomString(c.Config.PasswordLength,
+			c.Config.PasswordLetter, c.Config.PasswordDigit, c.Config.PasswordSpecial)
+	} else {
+		entry.Password = c.InputBox("Password", "", true)
+	}
 	entry.OTP = c.InputBox("OTP Key", "", false)
 	entry.Comment = c.InputBox("Comment", "", false)
 
@@ -227,6 +262,8 @@ func (c *Cli) ListEntries() {
 		ui.Render(l)
 		e := <-uiEvents
 		switch e.ID {
+		case "t":
+			c.ChoiceBox("test", false)
 		case "q", "<C-c>":
 			return
 		case "<Enter>":
