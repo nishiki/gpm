@@ -233,3 +233,14 @@ func TestLoadWalletWithBadPassword(t *testing.T) {
 		t.Errorf("must have 0 entries: %d", entries)
 	}
 }
+
+func TestGetGroup(t *testing.T) {
+	wallet := generateWalletWithEntries()
+	groups := wallet.Groups()
+	if len(groups) != 1 {
+		t.Errorf("there must have 1 group: %d", len(groups))
+	}
+	if groups[0] != "Good Group" {
+		t.Errorf("the group name isn't 'Good Group': %s", groups[0])
+	}
+}

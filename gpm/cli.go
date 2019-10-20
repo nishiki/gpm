@@ -109,7 +109,33 @@ func (c *Cli) UnlockWallet(wallet string) error {
 }
 
 func (c *Cli) GroupsBox() string {
-	return ""
+	l := widgets.NewList()
+	l.Title = "Groups"
+	l.TextStyle = ui.NewStyle(ui.ColorYellow)
+	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
+	l.WrapText = false
+	l.SetRect(0, 0, 25, 23)
+	l.Rows = c.Wallet.Groups()
+
+	uiEvents := ui.PollEvents()
+	for {
+		ui.Render(l)
+		e := <-uiEvents
+		switch e.ID {
+		case "q", "<C-c>", "<Escape>":
+			return ""
+		case "<Enter>":
+			return l.Rows[l.SelectedRow]
+		case "j", "<Down>":
+			if len(l.Rows) > 0 {
+				l.ScrollDown()
+			}
+		case "k", "<Up>":
+			if len(l.Rows) > 0 {
+				l.ScrollUp()
+			}
+		}
+	}
 }
 
 func (c *Cli) ListEntries() {

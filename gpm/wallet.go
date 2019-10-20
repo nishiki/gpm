@@ -103,6 +103,28 @@ func (w *Wallet) Save() error {
 	return nil
 }
 
+// Groups return array with the groups name
+func (w *Wallet) Groups() []string {
+	var groups []string
+	var exist bool
+
+	for _, entry := range w.Entries {
+		exist = false
+		for _, group := range groups {
+			if group == entry.Group {
+				exist = true
+				break
+			}
+		}
+
+		if exist == false {
+			groups = append(groups, entry.Group)
+		}
+	}
+
+	return groups
+}
+
 // SearchEntry return an array with the array expected with the pattern
 func (w *Wallet) SearchEntry(pattern string, group string) []Entry {
 	var entries []Entry
