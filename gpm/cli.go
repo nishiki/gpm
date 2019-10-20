@@ -9,6 +9,7 @@ import (
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"github.com/atotto/clipboard"
 )
 
 // Options
@@ -271,6 +272,7 @@ func (c *Cli) AddEntry() bool {
 func (c *Cli) ListEntries(ch chan<- bool) {
 	var pattern, group string
 	var entries []Entry
+	var selected bool
 
 	refresh := true
 	index := -1
@@ -297,15 +299,20 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 		}
 
 		if len(entries) > 0 && index >= 0 && index < len(entries) {
+			selected = true
+		} else {
+			selected = false
+		}
+
+		if selected {
 			c.EntryBox(entries[index])
 		}
 
 		ui.Render(l)
 		e := <-uiEvents
 		switch e.ID {
-		case "t":
-			c.ChoiceBox("test", false)
 		case "q":
+			clipboard.WriteAll("")
 			ch <- true
 		case "<Enter>":
 			index = l.SelectedRow
@@ -316,11 +323,11 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 		case "n":
 			refresh = c.AddEntry()
 		case "u":
-			if len(entries) > 0 && index >= 0 && index < len(entries) {
+			if selected {
 				refresh = c.UpdateEntry(entries[index])
 			}
 		case "d":
-			if len(entries) > 0 && index >= 0 && index < len(entries) {
+			if selected {
 				refresh = c.DeleteEntry(entries[index])
 			}
 		case "/":
@@ -336,6 +343,20 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 		case "k", "<Up>":
 			if len(entries) > 0 {
 				l.ScrollUp()
+			}
+		case "<C-b>":
+			if selected {
+				clipboard.WriteAll(entries[index].User)
+			}
+		case "<C-c>":
+			if selected {
+				clipboard.WriteAll(entries[index].Password)
+			}
+		case "<C-o>":
+			if selected {
+				code, time, _ := entries[index].OTPCode()
+				c.NotificationBox(fmt.Sprintf("the OTP code is available for %d seconds", time), false)
+				clipboard.WriteAll(code)
 			}
 		}
 	}
@@ -429,7 +450,7 @@ func Run() {
 		select {
 			case <-c1:
 				return
-			case <-time.After(10 * time.Second):
+			case <-time.After(300 * time.Second):
 				return
 		}
 	}
