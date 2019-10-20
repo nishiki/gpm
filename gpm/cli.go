@@ -3,6 +3,7 @@ package gpm
 import (
 	"fmt"
 	"os"
+	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -247,7 +248,7 @@ func (c *Cli) AddEntry() bool {
 	return true
 }
 
-func (c *Cli) ListEntries() {
+func (c *Cli) ListEntries(ch chan<- bool) {
 	var pattern, group string
 	var entries []Entry
 
@@ -284,8 +285,8 @@ func (c *Cli) ListEntries() {
 		switch e.ID {
 		case "t":
 			c.ChoiceBox("test", false)
-		case "q", "<C-c>":
-			return
+		case "q":
+			ch <- true
 		case "<Enter>":
 			index = l.SelectedRow
 		case "<Escape>":
@@ -337,5 +338,12 @@ func Run() {
 		os.Exit(2)
 	}
 
-	c.ListEntries()
+	c1 := make(chan bool)
+	go c.ListEntries(c1)
+	select {
+		case <-c1:
+			return
+		case <-time.After(10 * time.Second):
+			return
+	}
 }
