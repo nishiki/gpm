@@ -2,11 +2,27 @@ package gpm
 
 import (
 	"fmt"
+	"flag"
+	"io/ioutil"
 	"os"
 	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+)
+
+// Options
+var (
+	LENGTH  = flag.Int("length", 16, "specify the password length")
+	CONFIG  = flag.String("config", "", "specify the config file")
+	WALLET  = flag.String("wallet", "", "specify the wallet")
+	PASSWD  = flag.Bool("password", false, "generate and print a random password")
+	DIGIT   = flag.Bool("digit", false, "use digit to generate a random password")
+	LETTER  = flag.Bool("letter", false, "use letter to generate a random password")
+	SPECIAL = flag.Bool("special", false, "use special chars to generate a random password")
+	EXPORT  = flag.String("export", "", "json file path to export a wallet")
+	IMPORT  = flag.String("import", "", "json file path to import entries")
+	HELP    = flag.Bool("help", false, "print this help message")
 )
 
 type Cli struct {
@@ -321,9 +337,60 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	}
 }
 
+// Import entries from json file
+func (c *Cli) ImportWallet() error {
+	_, err := os.Stat(*IMPORT)
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadFile(*IMPORT)
+	if err != nil {
+		return err
+	}
+
+	err = c.Wallet.Import(data)
+	if err != nil {
+		return err
+	}
+
+	err = c.Wallet.Save()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Export a wallet in json format
+func (c *Cli) ExportWallet() error {
+	data, err := c.Wallet.Export()
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(*EXPORT, data, 0600)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Run the cli interface
 func Run() {
 	var c Cli
-	c.Config.Load("")
+
+	flag.Parse()
+	c.Config.Load(*CONFIG)
+
+	if *HELP {
+		flag.PrintDefaults()
+		os.Exit(1)
+	} else if *PASSWD {
+		fmt.Println(RandomString(*LENGTH, *LETTER, *DIGIT, *SPECIAL))
+		os.Exit(0)
+	}
 
 	if err := ui.Init(); err != nil {
 		fmt.Printf("failed to initialize termui: %v\n", err)
@@ -331,19 +398,35 @@ func Run() {
 	}
 	defer ui.Close()
 
-	err := c.UnlockWallet("test")
+	err := c.UnlockWallet(*WALLET)
 	if err != nil {
 		ui.Close()
 		fmt.Printf("failed to open the wallet: %v\n", err)
 		os.Exit(2)
 	}
 
-	c1 := make(chan bool)
-	go c.ListEntries(c1)
-	select {
-		case <-c1:
-			return
-		case <-time.After(10 * time.Second):
-			return
+	if *IMPORT != "" {
+		err := c.ImportWallet()
+		if err != nil {
+			ui.Close()
+			fmt.Printf("failed to import: %v\n", err)
+			os.Exit(2)
+		}
+	} else if *EXPORT != "" {
+		err := c.ExportWallet()
+		if err != nil {
+			ui.Close()
+			fmt.Printf("failed to export: %v\n", err)
+			os.Exit(2)
+		}
+	} else {
+		c1 := make(chan bool)
+		go c.ListEntries(c1)
+		select {
+			case <-c1:
+				return
+			case <-time.After(10 * time.Second):
+				return
+		}
 	}
 }
