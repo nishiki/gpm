@@ -142,7 +142,7 @@ func (c *Cli) UnlockWallet(wallet string) error {
 	return err
 }
 
-func (c *Cli) UpdateEntry(entry Entry) error {
+func (c *Cli) UpdateEntry(entry Entry) bool {
 	entry.Name = c.InputBox("Name", entry.Name, false)
 	entry.Group = c.InputBox("Group", entry.Group, false)
 	entry.URI = c.InputBox("URI", entry.URI, false)
@@ -153,18 +153,20 @@ func (c *Cli) UpdateEntry(entry Entry) error {
 
 	err := c.Wallet.UpdateEntry(entry)
 	if err != nil {
-		return err
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
 	}
 
 	err = c.Wallet.Save()
 	if err != nil {
-		return err
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
 	}
 
-	return nil
+	return true
 }
 
-func (c *Cli) AddEntry() error {
+func (c *Cli) AddEntry() bool {
 	entry := Entry{}
 	entry.GenerateID()
 	entry.Name = c.InputBox("Name", "", false)
@@ -177,15 +179,17 @@ func (c *Cli) AddEntry() error {
 
 	err := c.Wallet.AddEntry(entry)
 	if err != nil {
-		return err
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
 	}
 
 	err = c.Wallet.Save()
 	if err != nil {
-		return err
+		c.NotificationBox(fmt.Sprintf("%s", err), true)
+		return false
 	}
 
-	return nil
+	return true
 }
 
 func (c *Cli) ListEntries() {
@@ -229,22 +233,13 @@ func (c *Cli) ListEntries() {
 			index = l.SelectedRow
 		case "<Escape>":
 			pattern = ""
+			group = ""
 			refresh = true
 		case "n":
-			err := c.AddEntry()
-			if err == nil {
-				refresh = true
-			} else {
-				c.NotificationBox(fmt.Sprintf("%s", err), true)
-			}
+			refresh = c.AddEntry()
 		case "u":
 			if len(entries) > 0 && index >= 0 && index < len(entries) {
-				err := c.UpdateEntry(entries[index])
-				if err == nil {
-					refresh = true
-				} else {
-					c.NotificationBox(fmt.Sprintf("%s", err), true)
-				}
+				refresh = c.UpdateEntry(entries[index])
 			}
 		case "/":
 			pattern = c.InputBox("Search", pattern, false)
