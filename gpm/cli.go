@@ -115,6 +115,7 @@ func (c *Cli) EntryBox(entry Entry) {
 	p.Title = "Entry"
 	p.SetRect(25, 0, 80, 20)
 	p.Text = fmt.Sprintf("%s[Name:](fg:yellow) %s\n", p.Text, entry.Name)
+	p.Text = fmt.Sprintf("%s[Group:](fg:yellow) %s\n", p.Text, entry.Group)
 	p.Text = fmt.Sprintf("%s[URI:](fg:yellow) %s\n", p.Text, entry.URI)
 	p.Text = fmt.Sprintf("%s[User:](fg:yellow) %s\n", p.Text, entry.User)
 	if entry.OTP == "" {
@@ -278,7 +279,6 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	index := -1
 
 	l := widgets.NewList()
-	l.Title = "Entries"
 	l.TextStyle = ui.NewStyle(ui.ColorYellow)
 	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
 	l.WrapText = false
@@ -287,6 +287,12 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	ui.Clear()
 	uiEvents := ui.PollEvents()
 	for {
+		if group != "" {
+			l.Title = group
+		} else {
+			l.Title = "All"
+		}
+
 		if refresh {
 			refresh = false
 			index = -1
