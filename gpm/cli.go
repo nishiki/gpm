@@ -112,7 +112,6 @@ func (c *Cli) InputBox(title string, input string, hidden bool) string {
 
 func (c *Cli) EntryBox(entry Entry) {
 	p := widgets.NewParagraph()
-	p.Title = "Entry"
 	p.SetRect(25, 0, 80, 20)
 	p.Text = fmt.Sprintf("%s[Name:](fg:yellow) %s\n", p.Text, entry.Name)
 	p.Text = fmt.Sprintf("%s[Group:](fg:yellow) %s\n", p.Text, entry.Group)

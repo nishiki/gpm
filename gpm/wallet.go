@@ -117,7 +117,7 @@ func (w *Wallet) Groups() []string {
 			}
 		}
 
-		if exist == false {
+		if exist == false && entry.Group != "" {
 			groups = append(groups, entry.Group)
 		}
 	}
