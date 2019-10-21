@@ -364,6 +364,8 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 				clipboard.WriteAll(code)
 			}
 		}
+
+		ch <- false
 	}
 }
 
@@ -452,11 +454,16 @@ func Run() {
 	} else {
 		c1 := make(chan bool)
 		go c.ListEntries(c1)
-		select {
-			case <-c1:
-				return
-			case <-time.After(300 * time.Second):
-				return
+
+		for {
+			select {
+				case res := <-c1:
+					if res {
+						return
+					}
+				case <-time.After(300 * time.Second):
+					return
+			}
 		}
 	}
 }
