@@ -287,9 +287,9 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	uiEvents := ui.PollEvents()
 	for {
 		if group != "" {
-			l.Title = group
+			l.Title = fmt.Sprintf("Group: %s", group)
 		} else {
-			l.Title = "All"
+			l.Title = "Group: All"
 		}
 
 		if refresh {
