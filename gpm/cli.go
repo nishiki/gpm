@@ -26,11 +26,13 @@ var (
 	HELP    = flag.Bool("help", false, "print this help message")
 )
 
+// Cli struct
 type Cli struct {
 	Config Config
 	Wallet Wallet
 }
 
+// NotificationBox print a notification
 func (c *Cli) NotificationBox(msg string, error bool) {
 	p := widgets.NewParagraph()
 	p.SetRect(25, 20, 80, 23)
@@ -45,6 +47,7 @@ func (c *Cli) NotificationBox(msg string, error bool) {
 	ui.Render(p)
 }
 
+// ChoiceBox is a boolean form
 func (c *Cli) ChoiceBox(title string, choice bool) bool {
 	t := widgets.NewTabPane("Yes", "No")
 	t.SetRect(10, 10, 70, 5)
@@ -71,6 +74,7 @@ func (c *Cli) ChoiceBox(title string, choice bool) bool {
 	}
 }
 
+// InputBox is string form
 func (c *Cli) InputBox(title string, input string, hidden bool) string {
 	var secret string
 
@@ -110,6 +114,7 @@ func (c *Cli) InputBox(title string, input string, hidden bool) string {
 	}
 }
 
+// EntryBox to add a new entry
 func (c *Cli) EntryBox(entry Entry) {
 	p := widgets.NewParagraph()
 	p.SetRect(25, 0, 80, 20)
@@ -127,6 +132,7 @@ func (c *Cli) EntryBox(entry Entry) {
 	ui.Render(p)
 }
 
+// GroupBox to select a group
 func (c *Cli) GroupsBox() string {
 	l := widgets.NewList()
 	l.Title = "Groups"
@@ -161,6 +167,7 @@ func (c *Cli) GroupsBox() string {
 	}
 }
 
+// UnlockWallet to decrypt a wallet
 func (c *Cli) UnlockWallet(wallet string) error {
 	var walletName string
 	var err error
@@ -190,6 +197,7 @@ func (c *Cli) UnlockWallet(wallet string) error {
 	return err
 }
 
+// DeleteEntry to delete an exisiting entry
 func (c *Cli) DeleteEntry(entry Entry) bool {
 	if !c.ChoiceBox("Do you want delete this entry ?", false) {
 		return false
@@ -210,6 +218,7 @@ func (c *Cli) DeleteEntry(entry Entry) bool {
 	return true
 }
 
+// UpdateEntry to update an existing entry
 func (c *Cli) UpdateEntry(entry Entry) bool {
 	entry.Name = c.InputBox("Name", entry.Name, false)
 	entry.Group = c.InputBox("Group", entry.Group, false)
@@ -238,6 +247,7 @@ func (c *Cli) UpdateEntry(entry Entry) bool {
 	return true
 }
 
+// AddEntry to add new entry
 func (c *Cli) AddEntry() bool {
 	entry := Entry{}
 	entry.GenerateID()
@@ -269,6 +279,7 @@ func (c *Cli) AddEntry() bool {
 	return true
 }
 
+// ListEntries to list all entries
 func (c *Cli) ListEntries(ch chan<- bool) {
 	var pattern, group string
 	var entries []Entry
