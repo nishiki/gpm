@@ -167,6 +167,30 @@ func (c *Cli) GroupsBox() string {
 	}
 }
 
+// HelpBox print help message
+func (c *Cli) HelpBox() {
+	p := widgets.NewParagraph()
+	p.SetRect(25, 0, 80, 20)
+	p.Title = "Short keys"
+	p.Text = `[<escape>](fg:yellow)    clear current search
+[<enter> ](fg:yellow)    select entry or group
+[<up>    ](fg:yellow)    move cursor to up
+[<down>  ](fg:yellow)    move cursor to down
+[h       ](fg:yellow)    print this help message
+[q       ](fg:yellow)    quit
+[g       ](fg:yellow)    filter the entries by group
+[n       ](fg:yellow)    add a new entry
+[u       ](fg:yellow)    update an entry
+[d       ](fg:yellow)    delete an entry
+[/       ](fg:yellow)    search
+[Ctrl + b](fg:yellow)    copy username
+[Ctrl + c](fg:yellow)    copy password
+[Ctrl + o](fg:yellow)    copy OTP code
+`
+	ui.Render(p)
+
+}
+
 // UnlockWallet to decrypt a wallet
 func (c *Cli) UnlockWallet(wallet string) error {
 	var walletName string
@@ -312,6 +336,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 				l.Rows = append(l.Rows, entry.Name)
 			}
 			ui.Clear()
+		  c.NotificationBox("pess h to view short keys", false)
 		}
 
 		if len(entries) > 0 && index >= 0 && index < len(entries) {
@@ -327,6 +352,8 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 		ui.Render(l)
 		e := <-uiEvents
 		switch e.ID {
+		case "h":
+			c.HelpBox()
 		case "q":
 			clipboard.WriteAll("")
 			ch <- true
