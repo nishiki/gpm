@@ -390,9 +390,11 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 		case "<C-b>":
 			if selected {
 				clipboard.WriteAll(entries[index].User)
+				c.NotificationBox("the username is copied in clipboard", false)
 			}
 		case "<C-c>":
 			if selected {
+				c.NotificationBox("the password is copied in clipboard", false)
 				clipboard.WriteAll(entries[index].Password)
 			}
 		case "<C-o>":
