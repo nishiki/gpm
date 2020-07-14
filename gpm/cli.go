@@ -171,11 +171,11 @@ func (c *Cli) GroupsBox() string {
 func (c *Cli) HelpBox() {
 	p := widgets.NewParagraph()
 	p.SetRect(25, 0, 80, 20)
-	p.Title = "Short keys"
+	p.Title = "Short cuts"
 	p.Text = `[<escape>](fg:yellow)    clear current search
 [<enter> ](fg:yellow)    select entry or group
-[<up>    ](fg:yellow)    move cursor to up
-[<down>  ](fg:yellow)    move cursor to down
+[<up>    ](fg:yellow)    move cursor up
+[<down>  ](fg:yellow)    move cursor down
 [h       ](fg:yellow)    print this help message
 [q       ](fg:yellow)    quit
 [g       ](fg:yellow)    filter the entries by group
@@ -336,7 +336,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 				l.Rows = append(l.Rows, entry.Name)
 			}
 			ui.Clear()
-		  c.NotificationBox("pess h to view short keys", false)
+		  c.NotificationBox("press h to view short cuts", false)
 		}
 
 		if len(entries) > 0 && index >= 0 && index < len(entries) {
