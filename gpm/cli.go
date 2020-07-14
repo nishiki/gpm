@@ -354,6 +354,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 		switch e.ID {
 		case "h":
 			c.HelpBox()
+			index = -1
 		case "q":
 			clipboard.WriteAll("")
 			ch <- true
