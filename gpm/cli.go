@@ -140,7 +140,7 @@ func (c *Cli) GroupsBox() string {
 	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
 	l.WrapText = false
 	l.SetRect(0, 0, 25, 23)
-	l.Rows = c.Wallet.Groups()
+	l.Rows = append(c.Wallet.Groups(), "No group")
 
 	uiEvents := ui.PollEvents()
 	for {
@@ -309,6 +309,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	var selected bool
 
 	refresh := true
+  noGroup := false
 	index := -1
 
 	l := widgets.NewList()
@@ -322,14 +323,16 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	for {
 		if group != "" {
 			l.Title = fmt.Sprintf("Group: %s", group)
+		} else if noGroup {
+			l.Title = "Group: No group"
 		} else {
 			l.Title = "Group: All"
-		}
+    }
 
 		if refresh {
 			refresh = false
 			index = -1
-			entries = c.Wallet.SearchEntry(pattern, group)
+			entries = c.Wallet.SearchEntry(pattern, group, noGroup)
 			l.Rows = []string{}
 			for _, entry := range entries {
 				l.Rows = append(l.Rows, entry.Name)
@@ -361,7 +364,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 			index = l.SelectedRow
 		case "<Escape>":
 			pattern = ""
-			group = ""
+			group = "all"
 			refresh = true
 		case "n":
 			refresh = c.AddEntry()
@@ -378,6 +381,11 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 			refresh = true
 		case "g":
 			group = c.GroupsBox()
+      noGroup = false
+      if group == "No group" {
+        group = ""
+        noGroup = true
+      }
 			refresh = true
 		case "j", "<Down>":
 			if len(entries) > 0 {

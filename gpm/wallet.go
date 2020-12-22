@@ -126,12 +126,12 @@ func (w *Wallet) Groups() []string {
 }
 
 // SearchEntry return an array with the array expected with the pattern
-func (w *Wallet) SearchEntry(pattern string, group string) []Entry {
+func (w *Wallet) SearchEntry(pattern string, group string, noGroup bool) []Entry {
 	var entries []Entry
 	r := regexp.MustCompile(strings.ToLower(pattern))
 
 	for _, entry := range w.Entries {
-		if group != "" && strings.ToLower(entry.Group) != strings.ToLower(group) {
+		if (noGroup && entry.Group != "") || (!noGroup && group != "" && strings.ToLower(entry.Group) != strings.ToLower(group)) {
 			continue
 		}
 		if r.Match([]byte(strings.ToLower(entry.Name))) ||
