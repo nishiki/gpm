@@ -132,7 +132,7 @@ func (c *Cli) EntryBox(entry Entry) {
 	ui.Render(p)
 }
 
-// GroupBox to select a group
+// GroupsBox to select a group
 func (c *Cli) GroupsBox() string {
 	l := widgets.NewList()
 	l.Title = "Groups"
@@ -152,9 +152,8 @@ func (c *Cli) GroupsBox() string {
 		case "<Enter>":
 			if len(l.Rows) == 0 {
 				return ""
-		  } else {
-				return l.Rows[l.SelectedRow]
 			}
+			return l.Rows[l.SelectedRow]
 		case "j", "<Down>":
 			if len(l.Rows) > 0 {
 				l.ScrollDown()
@@ -410,7 +409,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	}
 }
 
-// Import entries from json file
+// ImportWallet import entries from json file
 func (c *Cli) ImportWallet() error {
 	_, err := os.Stat(*IMPORT)
 	if err != nil {
@@ -435,7 +434,7 @@ func (c *Cli) ImportWallet() error {
 	return nil
 }
 
-// Export a wallet in json format
+// ExportWallet export a wallet in json format
 func (c *Cli) ExportWallet() error {
 	data, err := c.Wallet.Export()
 	if err != nil {
