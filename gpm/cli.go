@@ -114,6 +114,40 @@ func (c *Cli) InputBox(title string, input string, hidden bool) string {
 	}
 }
 
+// SelectBox to select an item from a list
+func (c *Cli) SelectBox(title string, items []string) string {
+	l := widgets.NewList()
+	l.Title = title
+	l.TextStyle = ui.NewStyle(ui.ColorYellow)
+	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
+	l.WrapText = false
+	l.SetRect(10, 10, 70, 5)
+	l.Rows = items
+
+	uiEvents := ui.PollEvents()
+	for {
+		ui.Render(l)
+		e := <-uiEvents
+		switch e.ID {
+		case "q", "<C-c>", "<Escape>":
+			return ""
+		case "<Enter>":
+			if len(l.Rows) == 0 {
+				return ""
+			}
+			return l.Rows[l.SelectedRow]
+		case "j", "<Down>":
+			if len(l.Rows) > 0 {
+				l.ScrollDown()
+			}
+		case "k", "<Up>":
+			if len(l.Rows) > 0 {
+				l.ScrollUp()
+			}
+		}
+	}
+}
+
 // EntryBox to add a new entry
 func (c *Cli) EntryBox(entry Entry) {
 	p := widgets.NewParagraph()
@@ -139,7 +173,7 @@ func (c *Cli) GroupsBox() string {
 	l.TextStyle = ui.NewStyle(ui.ColorYellow)
 	l.SelectedRowStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
 	l.WrapText = false
-	l.SetRect(0, 0, 25, 23)
+	l.SetRect(25, 0, 80, 20)
 	l.Rows = append(c.Wallet.Groups(), "No group")
 
 	uiEvents := ui.PollEvents()
@@ -244,7 +278,14 @@ func (c *Cli) DeleteEntry(entry Entry) bool {
 // UpdateEntry to update an existing entry
 func (c *Cli) UpdateEntry(entry Entry) bool {
 	entry.Name = c.InputBox("Name", entry.Name, false)
-	entry.Group = c.InputBox("Group", entry.Group, false)
+	if entry.Group == "" || c.ChoiceBox("Change the group ?", false) {
+		group := c.SelectBox("Group", append(c.Wallet.Groups(), "* Create new group *"))
+		if group == "* Create new group *" || group == "" {
+			entry.Group = c.InputBox("Group", "", false)
+		} else {
+			entry.Group = group
+		}
+	}
 	entry.URI = c.InputBox("URI", entry.URI, false)
 	entry.User = c.InputBox("Username", entry.User, false)
 	if c.ChoiceBox("Generate a new random password ?", false) {
@@ -275,7 +316,12 @@ func (c *Cli) AddEntry() bool {
 	entry := Entry{}
 	entry.GenerateID()
 	entry.Name = c.InputBox("Name", "", false)
-	entry.Group = c.InputBox("Group", "", false)
+	group := c.SelectBox("Group", append(c.Wallet.Groups(), "* Create new group *"))
+	if group == "* Create new group *" || group == "" {
+		entry.Group = c.InputBox("Group", "", false)
+	} else {
+		entry.Group = group
+	}
 	entry.URI = c.InputBox("URI", "", false)
 	entry.User = c.InputBox("Username", "", false)
 	if c.ChoiceBox("Generate a random password ?", true) {
@@ -309,7 +355,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 	var selected bool
 
 	refresh := true
-  noGroup := false
+	noGroup := false
 	index := -1
 
 	l := widgets.NewList()
@@ -327,7 +373,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 			l.Title = "Group: No group"
 		} else {
 			l.Title = "Group: All"
-    }
+		}
 
 		if refresh {
 			refresh = false
@@ -338,7 +384,7 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 				l.Rows = append(l.Rows, entry.Name)
 			}
 			ui.Clear()
-		  c.NotificationBox("press h to view short cuts", false)
+			c.NotificationBox("press h to view short cuts", false)
 		}
 
 		if len(entries) > 0 && index >= 0 && index < len(entries) {
@@ -381,11 +427,11 @@ func (c *Cli) ListEntries(ch chan<- bool) {
 			refresh = true
 		case "g":
 			group = c.GroupsBox()
-      noGroup = false
-      if group == "No group" {
-        group = ""
-        noGroup = true
-      }
+			noGroup = false
+			if group == "No group" {
+				group = ""
+				noGroup = true
+			}
 			refresh = true
 		case "j", "<Down>":
 			if len(entries) > 0 {
