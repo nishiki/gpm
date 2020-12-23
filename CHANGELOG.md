@@ -7,6 +7,8 @@ Which is based on [Keep A Changelog](http://keepachangelog.com/)
 
 ## Unreleased
 
+## v2.0.0 - 2020-12-23
+
 ### Changed
 
 - New interface
