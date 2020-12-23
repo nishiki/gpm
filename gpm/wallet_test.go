@@ -62,12 +62,12 @@ func TestSearchEntryWithGoodID(t *testing.T) {
 
 func TestSearchEntriesByGroup(t *testing.T) {
 	wallet := generateWalletWithEntries()
-	entries := len(wallet.SearchEntry("", "BAD-GROUP"))
+	entries := len(wallet.SearchEntry("", "BAD-GROUP", false))
 	if entries != 0 {
 		t.Errorf("a search with bad group must return 0 entry: %d", entries)
 	}
 
-	entries = len(wallet.SearchEntry("", "good group"))
+	entries = len(wallet.SearchEntry("", "good group", false))
 	if entries != 10 {
 		t.Errorf("a search with good group must return 10 entries: %d", entries)
 	}
@@ -75,17 +75,17 @@ func TestSearchEntriesByGroup(t *testing.T) {
 
 func TestSearchEntriesByPattern(t *testing.T) {
 	wallet := generateWalletWithEntries()
-	entries := len(wallet.SearchEntry("BAD-PATTERN", ""))
+	entries := len(wallet.SearchEntry("BAD-PATTERN", "", false))
 	if entries != 0 {
 		t.Errorf("a search with bad pattern must return 0 entry: %d", entries)
 	}
 
-	entries = len(wallet.SearchEntry("entry", ""))
+	entries = len(wallet.SearchEntry("entry", "", false))
 	if entries != 10 {
 		t.Errorf("a search with good pattern must return 10 entries: %d", entries)
 	}
 
-	entries = len(wallet.SearchEntry("^entry 5$", ""))
+	entries = len(wallet.SearchEntry("^entry 5$", "", false))
 	if entries != 1 {
 		t.Errorf("a search with specific pattern must return 1 entry: %d", entries)
 	}
@@ -93,7 +93,7 @@ func TestSearchEntriesByPattern(t *testing.T) {
 
 func TestSearchEntriesByPatternAndGroup(t *testing.T) {
 	wallet := generateWalletWithEntries()
-	entries := len(wallet.SearchEntry("entry", "good group"))
+	entries := len(wallet.SearchEntry("entry", "good group", false))
 	if entries != 10 {
 		t.Errorf("a search with good pattern and godd group must return 10 entries: %d", entries)
 	}
